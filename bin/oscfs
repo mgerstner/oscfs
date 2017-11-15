@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+# vim: ts=8 sw=8 sts=8 :
+
+from __future__ import with_statement, print_function
+
+import module_helper
+import oscfs.fs
+import oscfs.misc
+
+oscfs.misc.fixSigInt()
+
+the_fs = oscfs.fs.getInstance()
+the_fs.parse(errex = 1)
+the_fs.main()
+
