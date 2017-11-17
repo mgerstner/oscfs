@@ -23,13 +23,3 @@ def getGid():
 
 	return our_gid
 
-def fixSigInt():
-	"""The fuse-python module has got some trouble with correctly handling
-	CTRL-C (KeyboardInterrupt), because python takes control of it but the
-	libfuse needs to install its own handler for gracefully exiting.
-
-	This function reinstates the default signal handler such that libfuse
-	will install its own signal handler."""
-	import signal
-	signal.signal(signal.SIGINT, signal.SIG_DFL)
-

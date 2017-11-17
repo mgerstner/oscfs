@@ -2,30 +2,77 @@
 
 # standard modules
 from __future__ import with_statement, print_function
-
-# third party modules
-import osc.core
+import os
 
 # local modules
 import oscfs.types
+import oscfs.obs
+import oscfs.project
 
-class Root(oscfs.types.Node):
+class Root(oscfs.types.DirNode):
 	"""This type represents the root node of the file system containing
 	all the OBS projects as childs.
 
 	The root node can be used to iterate the complete file system.
 	"""
 
-	def __init__(self):
+	def __init__(self, obs, args):
 
-		super(Root, self).__init__(
-			_type = oscfs.types.FileType.directory
-		)
+		super(Root, self).__init__(name = "/")
 
-		self.getStat().setModTime(self.m_last_updated)
+		self.m_obs = obs
+		self.m_args = args
+
+	def getObs(self):
+
+		return self.m_obs
+
+	def getNode(self, path):
+		"""Traverses child nodes until the given path is found.
+		Returns the corresponding Node object."""
+
+		if path == self.getName():
+			return self
+
+		parts = path.split(os.path.sep)[1:]
+
+		node = self
+
+		for part in parts:
+
+			node.update()
+			entries = node.getEntries()
+
+			node = entries[part]
+
+		return node
 
 	def update(self):
 
-		pass
+		if not self.isCacheStale():
+			return
 
+		for project in self.m_obs.getProjectList():
+
+			if project in self.m_entries:
+				continue
+
+			parts = project.split(':')
+
+			is_home = "home" in parts
+			is_maintenance = "Maintenance" in parts
+
+			if is_home:
+				# if it's our own home then still keep it
+				is_our_home = self.m_obs.getUser() in parts
+				if not is_our_home and not self.m_args.homes:
+					continue
+			elif is_maintenance and not self.m_args.maintenance:
+				continue
+
+			self.m_entries[project] = oscfs.project.Project(
+				self, project
+			)
+
+		self.setCacheFresh()
 

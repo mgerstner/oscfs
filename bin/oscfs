@@ -7,9 +7,6 @@ import module_helper
 import oscfs.fs
 import oscfs.misc
 
-oscfs.misc.fixSigInt()
-
-the_fs = oscfs.fs.getInstance()
-the_fs.parse(errex = 1)
-the_fs.main()
+the_fs = oscfs.fs.OscFs()
+the_fs.run()
 

@@ -2,110 +2,162 @@
 
 from __future__ import with_statement, print_function
 
+# standard modules
 import os
 import sys
 import errno
+import argparse
 
+# third party modules
 import fuse
 
+# local modules
 import oscfs.root
+import oscfs.obs
 
-class OscFs(fuse.Fuse):
+class OscFs(fuse.LoggingMixIn, fuse.Operations):
 	"""The main class implementing the fuse operations and python-fuse
 	setup."""
 
 	def __init__(self):
 
 		self.m_default_url = "https://api.opensuse.org"
-		self.url = self.m_default_url
+		self.m_obs = oscfs.obs.Obs()
+		# stores file handle -> node mappings
+		# (file handles need to be integers)
+		self.m_handles = [None] * 1024
+		self._setupParser()
 
-		super(OscFs, self).__init__(
-			version = "%prog 0.1",
-			usage = "SUSE open build service file system",
-			# this is about the handling of the '-s' option for
-			# requiring single threaded operation. we don't
-			# support multi-threading at the moment so we don't
-			# care if the option's there or not
-			dash_s_do = 'setsingle'
+	def _setupParser(self):
+
+		self.m_parser = argparse.ArgumentParser(
+			description = "SUSE open build service file system"
 		)
 
-		self.parser.add_option(
-			mountopt = "url",
-			metavar = "API_URL",
-			default = self.m_default_url,
-			help = "Access the OBS instance located at the given URL",
+		self.m_parser.add_argument(
+			"-f", action = 'store_true',
+			help = "Run the file system in the foreground"
+		)
+		self.m_parser.add_argument(
+			"--apiurl", type = str, default = self.m_default_url,
+			help = "The API URL of the OBS instance. OpenSUSE build service is used by default"
+		)
+		self.m_parser.add_argument(
+			"--homes", action = 'store_true',
+			help = "If set then home projects will be included which is not the default"
+		)
+		self.m_parser.add_argument(
+			"--maintenance", action = 'store_true',
+			help = "If set then maintenance projects will be included which is not the default"
+		)
+		self.m_parser.add_argument(
+			"mountpoint", type = str,
+			help = "Path where to mount the file system"
 		)
 
-		# disable multithreading by default
-		self.multithreaded = False
+		self.m_parser.add_argument(
+			"--cache-time", type = int,
+			default = None,
+			help = """Specifies the time in seconds the contents
+				of the file system will be cached. Default: {}
+				seconds. Set to zero to disable caching.""".format(
+					oscfs.types.Node.max_cache_time.seconds
+			)
+		)
 
-	def main(self, *args, **kwargs):
+	def _getNode(self, path, fh = None):
 
-		self.parse(values=self, errex=1)
-		fuse.Fuse.main(self, *args, **kwargs)
+		if fh != None:
+			return self._getFileHandle(fh)
+		else:
+			try:
+				return self.m_root.getNode(path)
+			except KeyError:
+				raise fuse.FuseOSError(errno.ENOENT)
 
-	def _configureOsc(self):
+	def run(self):
 
-		import osc.conf
-		osc.conf.get_config()
-		osc.conf.config["apiurl"] = self.url
+		self.m_args = self.m_parser.parse_args()
+		self.m_obs.configure(self.m_args.apiurl)
+		self.m_root = oscfs.root.Root(self.m_obs, self.m_args)
+		if self.m_args.cache_time != None:
+			oscfs.types.Node.setMaxCacheTime(self.m_args.cache_time)
+
+		fuse.FUSE(
+			self,
+			self.m_args.mountpoint,
+			foreground = self.m_args.f,
+			nothreads = True
+		)
 
 	# global file system methods
 
-	def fsinit(self):
+	def getattr(self, path, fh = None):
 
-		try:
-			self._configureOsc()
-			self.m_root = oscfs.root.Root()
-		except Exception as e:
-			print("Failed to configure osc:", e)
-			sys._exit(1)
+		node = self._getNode(path, fh)
 
-	def getattr(self, path):
-		try:
-			ret = self.m_root.getStat()
-		except Exception as e:
-			print(e)
+		ret = node.getStat()
+
+		return ret.toDict()
+
+	def readdir(self, path, fh = None):
+
+		node = self._getNode(path, fh)
+
+		ret = node.getNames()
+
 		return ret
 
-	def readdir(self, path, fh):
-		full_path = self._full_path(path)
+	#def readlink(self, path):
+	#	pathname = os.readlink(self._full_path(path))
+	#	if pathname.startswith("/"):
+	#		# Path name is absolute, sanitize it.
+	#		return os.path.relpath(pathname, self.root)
+	#	else:
+	#		return pathname
 
-		dirents = ['.', '..']
-		if os.path.isdir(full_path):
-			dirents.extend(os.listdir(full_path))
-		for r in dirents:
-			yield fuse.Direntry(r)
+	# per file handle methods
 
-	def readlink(self, path):
-		pathname = os.readlink(self._full_path(path))
-		if pathname.startswith("/"):
-			# Path name is absolute, sanitize it.
-			return os.path.relpath(pathname, self.root)
-		else:
-			return pathname
+	def _allocFileHandle(self, node):
 
-	# File methods
-	# ============
+		for i in range(len(self.m_handles)):
+
+			if self.m_handles[i] == None:
+				self.m_handles[i] = node
+				return i
+
+		raise fuse.FuseOSError(errno.EMFILE)
+
+	def _freeFileHandle(self, fh):
+
+		self.m_handles[fh] = None
+
+	def _getFileHandle(self, fh):
+
+		return self.m_handles[fh]
+
+	def opendir(self, path):
+
+		node = self._getNode(path)
+		return self._allocFileHandle(node)
+
+	def close(self, fh):
+
+		self._freeFileHandle(fh)
 
 	def open(self, path, flags):
-		print(path)
 
-		fd = os.open(full_path, flags)
+		# deny writing
+		for badflag in (os.O_RDWR, os.O_WRONLY, os.O_CREAT):
+			if (flags & badflag) != 0:
+				raise fuse.FuseOSError(errno.EPERM)
 
-		return OpenContext(fd)
+		node = self._getNode(path)
+		return self._allocFileHandle(node)
 
-	def read(self, path, length, offset, filehandle):
+	def read(self, path, length, offset, fh):
 
-		fd = filehandle.m_fd
-		os.lseek(fd, offset, os.SEEK_SET)
+		node = self._getNode(path, fh)
 
-		return os.read(fd, length)
-
-def getInstance():
-
-	ret = OscFs()
-
-	return ret
-
+		return node.read(length, offset)
 
