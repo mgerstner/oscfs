@@ -108,13 +108,9 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 
 		return ret
 
-	#def readlink(self, path):
-	#	pathname = os.readlink(self._full_path(path))
-	#	if pathname.startswith("/"):
-	#		# Path name is absolute, sanitize it.
-	#		return os.path.relpath(pathname, self.root)
-	#	else:
-	#		return pathname
+	def readlink(self, path):
+		node = self._getNode(path)
+		return node.readlink()
 
 	# per file handle methods
 
@@ -141,9 +137,15 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 		node = self._getNode(path)
 		return self._allocFileHandle(node)
 
-	def close(self, fh):
+	def release(self, path, fh):
 
-		self._freeFileHandle(fh)
+		if fh != None:
+			self._freeFileHandle(fh)
+
+	def releasedir(self, path, fh):
+
+		if fh != None:
+			self._freeFileHandle(fh)
 
 	def open(self, path, flags):
 
