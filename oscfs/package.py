@@ -7,6 +7,7 @@ from __future__ import with_statement, print_function
 import oscfs.types
 import oscfs.obs
 import oscfs.file
+import oscfs.link
 
 class Package(oscfs.types.DirNode):
 	"""This type represents a package node of the file system containing
@@ -33,10 +34,17 @@ class Package(oscfs.types.DirNode):
 
 		obs = self.m_parent.getObs()
 
-		for name, size, mtime in obs.getPackageFileList(
+		types = oscfs.types.FileType
+
+		for ft, name, size, mtime, target in obs.getPackageFileList(
 			self.getProject(), self.getName()
 		):
-			node = oscfs.file.File(self, name, size, mtime)
+			if ft == types.regular:
+				node = oscfs.file.File(self, name, size, mtime)
+			elif ft == types.symlink:
+				node = oscfs.link.Link(self, name, target)
+			else:
+				raise Exception("Unexpected type")
 			self.m_entries[name] = node
 		
 		self.setCacheFresh()

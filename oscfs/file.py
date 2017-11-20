@@ -5,7 +5,6 @@ from __future__ import with_statement, print_function
 
 # local modules
 import oscfs.types
-import oscfs.obs
 
 class File(oscfs.types.Node):
 	"""This type represents a regular file in an OBS package which can

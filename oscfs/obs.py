@@ -40,11 +40,7 @@ class Obs(object):
 
 		return ret
 
-	def getPackageFileList(self, project, package):
-		"""Returns a list of the files belonging to a package. The
-		list is comprised of tuples of the form (name, size,
-		modtime)."""
-
+	def _getPackageFileTree(self, project, package):
 		xml = osc.core.show_files_meta(
 			self.m_apiurl,
 			project,
@@ -52,10 +48,40 @@ class Obs(object):
 			meta = False
 		)
 
+		tree = et.fromstring(xml)
+		return tree
+
+	def getPackageFileList(self, project, package):
+		"""Returns a list of the files belonging to a package. The
+		list is comprised of tuples of the form (name, size,
+		modtime)."""
+
+		tree = self._getPackageFileTree(project, package)
 		ret = []
 
-		tree = et.fromstring(xml)
-		node = tree.find("directory")
+		# if this is a linked package then we find two nodes
+		# "linkinfo" and a "_link" file entry. For getting information
+		# about the link we need to query the linkinfo first
+		#
+		# sadly there seems to be no way to query a package's link
+		# property without individually listing it which is a
+		# performance issue.
+		#
+		# therefore we only make the _link a symlink, not the package
+		# itself
+		li_node = tree.find("linkinfo")
+		# xml node seems to have a strange boolean behaviour...
+		if li_node is None:
+			link_target = None
+		else:
+			linkinfo = osc.core.Linkinfo()
+			linkinfo.read(li_node)
+			link_target = "../../{}/{}".format(
+				linkinfo.project,
+				linkinfo.package
+			)
+
+		from oscfs.types import FileType
 
 		for entry in tree:
 
@@ -64,9 +90,12 @@ class Obs(object):
 
 			attrs = entry.attrib
 			name = attrs["name"]
+			is_link = name == "_link" and link_target
+			ft = FileType.symlink if is_link else FileType.regular
 			size = int(attrs["size"])
 			mtime = int(attrs["mtime"])
-			ret.append( (name, size, mtime) )
+			link = link_target if is_link else None
+			ret.append( (ft, name, size, mtime, link) )
 
 		return ret
 
@@ -76,8 +105,8 @@ class Obs(object):
 		# 'osc cat' command line logic.
 
 		query = {
-			# follow source links
-			"expand": 1
+			# don't follow source links
+			"expand": 0
 		}
 
 		url = osc.core.makeurl(
