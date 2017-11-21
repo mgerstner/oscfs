@@ -119,3 +119,24 @@ class Obs(object):
 
 		return f.read()
 
+	def _getPackageRevisions(self, project, package, fmt):
+		"""Returns the list of revisions for the given project/package
+		path in the given fmt. @fmt can be any of ('text, 'csv',
+		'xml'). Each revision will come with date and commit text."""
+
+		return osc.core.get_commitlog(
+			self.m_apiurl,
+			project,
+			package,
+			None,
+			format = fmt
+		)
+
+	def getCommitLog(self, project, package):
+		"""Returns a string containing the commit log of the given
+		package in human readable form."""
+		return '\n'.join(
+			self._getPackageRevisions(project, package, "text")
+		)
+
+

@@ -26,7 +26,12 @@ class Package(oscfs.types.DirNode):
 	def getProject(self):
 
 		return self.m_parent.getName()
-	
+
+	def _addApiDir(self):
+
+		api_name = ".oscfs"
+		self.m_entries[api_name] = ApiDir(self, api_name)
+
 	def update(self):
 
 		if not self.isCacheStale():
@@ -48,7 +53,53 @@ class Package(oscfs.types.DirNode):
 			else:
 				raise Exception("Unexpected type")
 			self.m_entries[name] = node
-		
+
+		self._addApiDir()
+
 		self.setCacheFresh()
-		
+
+class LogNode(oscfs.types.Node):
+	"""This type fetches the commit log for the package it resides in."""
+
+	def __init__(self, parent, package, name):
+
+		super(LogNode, self).__init__(name = name)
+		self.m_parent = parent
+		self.m_package = package
+
+		self.m_log = self.fetchLog()
+		self.getStat().setSize(len(self.m_log))
+
+	def fetchLog(self):
+
+		package = self.m_package
+		obs = package.getObs()
+
+		log = obs.getCommitLog(package.getProject(), package.getName())
+
+		return log
+
+	def read(self, length, offset):
+
+		return self.m_log[offset:length]
+
+
+class ApiDir(oscfs.types.DirNode):
+	"""This type provides access to additional meta data for a package.
+	This is just the root directory for this which adds individual file
+	and directory nodes that represent actual API features."""
+
+	def __init__(self, parent, name):
+
+		super(ApiDir, self).__init__(name = name)
+		self.m_parent = parent
+
+	def update(self):
+		if not self.isCacheStale():
+			return
+
+		self.clearEntries()
+
+		log_name = "log"
+		self.m_entries[log_name] = LogNode(self, self.m_parent, log_name)
 

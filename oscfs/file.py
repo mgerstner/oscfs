@@ -13,7 +13,7 @@ class File(oscfs.types.Node):
 	def __init__(self, parent, name, size, mtime):
 
 		super(File, self).__init__(name = name)
-		self.m_parent = parent	
+		self.m_parent = parent
 
 		stat = self.getStat()
 		stat.setModTime(mtime)
