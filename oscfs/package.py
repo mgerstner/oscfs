@@ -59,7 +59,7 @@ class Package(oscfs.types.DirNode):
 		self.setCacheFresh()
 
 class LogNode(oscfs.types.Node):
-	"""This type fetches the commit log for the package it resides in."""
+	"""This node type contains the commit log for the package it resides in."""
 
 	def __init__(self, parent, package, name):
 
@@ -83,6 +83,33 @@ class LogNode(oscfs.types.Node):
 
 		return self.m_log[offset:length]
 
+class NumRevisionsNode(oscfs.types.Node):
+	"""This node type contains the number of commits for the package it
+	resides in."""
+
+	def __init__(self, parent, package, name):
+
+		super(NumRevisionsNode, self).__init__(name = name)
+		self.m_parent = parent
+		self.m_package = package
+
+		self.m_revisions = self.fetchRevisions()
+		self.getStat().setSize(len(self.m_revisions))
+
+	def fetchRevisions(self):
+
+		package = self.m_package
+		obs = package.getObs()
+
+		infos = obs.getCommitInfos(
+			package.getProject(), package.getName()
+		)
+
+		return str(len(infos))
+
+	def read(self, length, offset):
+
+		return self.m_revisions[offset:length]
 
 class ApiDir(oscfs.types.DirNode):
 	"""This type provides access to additional meta data for a package.
@@ -102,4 +129,8 @@ class ApiDir(oscfs.types.DirNode):
 
 		log_name = "log"
 		self.m_entries[log_name] = LogNode(self, self.m_parent, log_name)
+		num_revs_name = "num_revisions"
+		self.m_entries[num_revs_name] = NumRevisionsNode(
+			self, self.m_parent, num_revs_name
+		)
 
