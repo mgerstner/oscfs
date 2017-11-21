@@ -126,7 +126,7 @@ class DirNode(Node):
 	def __init__(self, name):
 
 		super(DirNode, self).__init__(name, _type = FileType.directory)
-		self.m_entries = dict()
+		self.clearEntries()
 
 	def getNames(self):
 
@@ -136,6 +136,10 @@ class DirNode(Node):
 		entries = self.m_entries.keys()
 
 		return entries + dots
+
+	def clearEntries(self):
+
+		self.m_entries = dict()
 			
 	def getEntries(self):
 

@@ -32,6 +32,8 @@ class Package(oscfs.types.DirNode):
 		if not self.isCacheStale():
 			return
 
+		self.clearEntries()
+
 		obs = self.m_parent.getObs()
 
 		types = oscfs.types.FileType
