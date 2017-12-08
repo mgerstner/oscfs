@@ -22,6 +22,10 @@ class Project(oscfs.types.DirNode):
 
 		return self.m_parent.getObs()
 
+	def getProject(self):
+
+		return self.getName()
+
 	def update(self):
 
 		if not self.isCacheStale():
@@ -39,7 +43,9 @@ class Project(oscfs.types.DirNode):
 				continue
 
 			self.m_entries[package] = oscfs.package.Package(
-				self, package
+				self, package,
+				project = self.getProject(),
+				package = package
 			)
 
 		self.setCacheFresh()

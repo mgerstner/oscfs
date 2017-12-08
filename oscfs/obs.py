@@ -41,23 +41,28 @@ class Obs(object):
 
 		return ret
 
-	def _getPackageFileTree(self, project, package):
+	def _getPackageFileTree(self, project, package, revision = None):
 		xml = osc.core.show_files_meta(
 			self.m_apiurl,
 			project,
 			package,
+			revision = revision,
 			meta = False
 		)
 
 		tree = et.fromstring(xml)
 		return tree
 
-	def getPackageFileList(self, project, package):
+	def getPackageFileList(self, project, package, revision = None):
 		"""Returns a list of the files belonging to a package. The
 		list is comprised of tuples of the form (name, size,
 		modtime)."""
 
-		tree = self._getPackageFileTree(project, package)
+		tree = self._getPackageFileTree(
+			project,
+			package,
+			revision = revision
+		)
 		ret = []
 
 		# if this is a linked package then we find two nodes
@@ -100,7 +105,7 @@ class Obs(object):
 
 		return ret
 
-	def getFileContent(self, project, package, _file):
+	def getFileContent(self, project, package, _file, revision = None):
 
 		# 'cat' is surprisingly difficult ... approach taken by the
 		# 'osc cat' command line logic.
@@ -109,6 +114,9 @@ class Obs(object):
 			# don't follow source links
 			"expand": 0
 		}
+
+		if revision:
+			query["rev"] = revision
 
 		url = osc.core.makeurl(
 			self.m_apiurl,
@@ -170,7 +178,10 @@ class Obs(object):
 
 			ret.append(ci)
 
-		return ret
+		return sorted(
+			ret,
+			key = lambda r: r.getRevision()
+		)
 
 class CommitInfo(object):
 
@@ -181,6 +192,9 @@ class CommitInfo(object):
 		self.m_date = None
 		self.m_req_id = None
 		self.m_message = None
+
+	def getRevision(self):
+		return self.m_revision
 
 	def setAuthor(self, author):
 		self.m_author = author
@@ -213,5 +227,4 @@ class CommitInfo(object):
 			self.getDate().strftime("%x %X"),
 			self.getReqId()
 		)
-
 
