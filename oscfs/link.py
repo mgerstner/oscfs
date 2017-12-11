@@ -2,6 +2,7 @@
 
 # standard modules
 from __future__ import with_statement, print_function
+import os
 
 # local modules
 import oscfs.types
@@ -13,7 +14,9 @@ class Link(oscfs.types.Node):
 	def __init__(self, parent, name, target):
 
 		super(Link, self).__init__(parent, name, oscfs.types.FileType.symlink)
-		self.m_target = target
+		depth = self.calcDepth()
+		up = "{}/".format(os.path.pardir) * depth
+		self.m_target = up + target
 
 		stat = self.getStat()
 		stat.setSize(len(self.m_target))

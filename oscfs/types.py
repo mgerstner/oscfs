@@ -125,6 +125,19 @@ class Node(object):
 		self.m_type = _type
 		self.m_stat.setFileType(_type)
 
+	def calcDepth(self):
+		"""Returns the nesting depth of the Node i.e. the number of
+		parent directories it has up to the root node."""
+
+		parent = self.m_parent
+		ret = 0
+
+		while not parent.isRoot():
+			parent = parent.getParent()
+			ret += 1
+
+		return ret
+
 	def isRoot(self):
 		"""Returns whether this node is the root node of the file
 		system."""

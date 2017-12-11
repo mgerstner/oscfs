@@ -82,7 +82,7 @@ class Obs(object):
 		else:
 			linkinfo = osc.core.Linkinfo()
 			linkinfo.read(li_node)
-			link_target = "../../{}/{}".format(
+			link_target = "{}/{}".format(
 				linkinfo.project,
 				linkinfo.package
 			)
