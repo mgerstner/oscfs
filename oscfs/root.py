@@ -18,7 +18,7 @@ class Root(oscfs.types.DirNode):
 
 	def __init__(self, obs, args):
 
-		super(Root, self).__init__(name = "/")
+		super(Root, self).__init__(None, name = "/")
 
 		self.m_obs = obs
 		self.m_args = args

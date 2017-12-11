@@ -12,8 +12,7 @@ class Link(oscfs.types.Node):
 
 	def __init__(self, parent, name, target):
 
-		super(Link, self).__init__(name, oscfs.types.FileType.symlink)
-		self.m_parent = parent
+		super(Link, self).__init__(parent, name, oscfs.types.FileType.symlink)
 		self.m_target = target
 
 		stat = self.getStat()

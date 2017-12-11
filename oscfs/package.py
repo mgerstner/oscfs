@@ -16,8 +16,7 @@ class Package(oscfs.types.DirNode):
 
 	def __init__(self, parent, name, project, package, revision = None):
 
-		super(Package, self).__init__(name = name)
-		self.m_parent = parent
+		super(Package, self).__init__(parent, name)
 		self.m_revision = revision
 		self.m_project = project
 		self.m_package = package
@@ -78,8 +77,7 @@ class LogNode(oscfs.types.Node):
 
 	def __init__(self, parent, package, name):
 
-		super(LogNode, self).__init__(name = name)
-		self.m_parent = parent
+		super(LogNode, self).__init__(parent, name)
 		self.m_package = package
 
 		self.m_log = self.fetchLog()
@@ -104,8 +102,7 @@ class NumRevisionsNode(oscfs.types.Node):
 
 	def __init__(self, parent, package, name):
 
-		super(NumRevisionsNode, self).__init__(name = name)
-		self.m_parent = parent
+		super(NumRevisionsNode, self).__init__(parent, name)
 		self.m_package = package
 
 		self.m_revisions = self.fetchRevisions()
@@ -133,8 +130,7 @@ class ApiDir(oscfs.types.DirNode):
 
 	def __init__(self, parent, name):
 
-		super(ApiDir, self).__init__(name = name)
-		self.m_parent = parent
+		super(ApiDir, self).__init__(parent, name)
 		self.m_log_name = "log"
 		self.m_num_revs_name = "num_revisions"
 		self.m_commits_dir_name = "commits"
@@ -181,8 +177,7 @@ class CommitNode(oscfs.types.Node):
 
 	def __init__(self, parent, info, name):
 
-		super(CommitNode, self).__init__(name = name)
-		self.m_parent = parent
+		super(CommitNode, self).__init__(parent, name)
 		self.m_info = info
 		self.m_commit = self.buildCommit()
 		stat = self.getStat()
@@ -212,8 +207,7 @@ class CommitsDir(oscfs.types.DirNode):
 
 	def __init__(self, parent, package, name):
 
-		super(CommitsDir, self).__init__(name = name)
-		self.m_parent = parent
+		super(CommitsDir, self).__init__(parent, name)
 		self.m_package = package
 
 	def update(self):
@@ -240,8 +234,7 @@ class RevisionsDir(oscfs.types.DirNode):
 
 	def __init__(self, parent, package, name):
 
-		super(RevisionsDir, self).__init__(name = name)
-		self.m_parent = parent
+		super(RevisionsDir, self).__init__(parent, name)
 		self.m_package = package
 
 	def getObs(self):

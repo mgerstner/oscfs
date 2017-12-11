@@ -12,8 +12,7 @@ class File(oscfs.types.Node):
 
 	def __init__(self, parent, name, size, mtime, revision = None):
 
-		super(File, self).__init__(name = name)
-		self.m_parent = parent
+		super(File, self).__init__(parent, name)
 		self.m_revision = revision
 
 		stat = self.getStat()

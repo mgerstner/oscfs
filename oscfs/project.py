@@ -15,8 +15,7 @@ class Project(oscfs.types.DirNode):
 
 	def __init__(self, parent, name):
 
-		super(Project, self).__init__(name = name)
-		self.m_parent = parent
+		super(Project, self).__init__(parent, name)
 
 	def getObs(self):
 

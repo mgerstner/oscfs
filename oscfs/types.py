@@ -87,10 +87,11 @@ class Node(object):
 
 	max_cache_time = datetime.timedelta(minutes = 5)
 
-	def __init__(self, name, _type = FileType.regular):
+	def __init__(self, parent, name, _type = FileType.regular):
 
 		self.m_stat = Stat()
 		self.m_name = name
+		self.m_parent = parent
 		self.setType(_type)
 		self.m_last_updated = None
 
@@ -103,6 +104,9 @@ class Node(object):
 
 	def getName(self):
 		return self.m_name
+
+	def getParent(self):
+		return self.m_parent
 
 	def isCacheStale(self):
 		if not self.wasEverUpdated():
@@ -121,11 +125,20 @@ class Node(object):
 		self.m_type = _type
 		self.m_stat.setFileType(_type)
 
+	def isRoot(self):
+		"""Returns whether this node is the root node of the file
+		system."""
+		return self.m_parent == None
+
 class DirNode(Node):
 
-	def __init__(self, name):
+	def __init__(self, parent, name):
 
-		super(DirNode, self).__init__(name, _type = FileType.directory)
+		super(DirNode, self).__init__(
+			parent,
+			name,
+			_type = FileType.directory
+		)
 		self.clearEntries()
 
 	def getNames(self):
