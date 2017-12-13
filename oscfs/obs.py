@@ -19,7 +19,13 @@ class Obs(object):
 
 		import osc.conf
 		self.m_apiurl = apiurl
-		osc.conf.get_config()
+		try:
+			osc.conf.get_config()
+		except osc.oscerr.NoConfigfile:
+			raise Exception("No .oscrc config file found. Please configure OSC first.")
+		except osc.oscerr.ConfigError:
+			raise Exception("No valid configuration found in .oscrc. Please configure OSC first.")
+
 		osc.conf.config["apiurl"] = apiurl
 
 	def getUser(self):
