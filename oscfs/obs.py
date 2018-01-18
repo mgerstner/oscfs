@@ -111,6 +111,22 @@ class Obs(object):
 
 		return ret
 
+	def getPackageRequestList(self, project, package, states = None):
+		"""Returns a list of osc.core.Request instances representing
+		the existing requests for the given project/package.
+
+		If @states is specified then it is supposed to be a list of
+		state labels the returned requests should be in. Otherwise all
+		requests regardless of state will be returned."""
+
+		return osc.core.get_request_list(
+			self.m_apiurl,
+			project,
+			package,
+			req_state = states if states else ['all'],
+			withfullhistory = True
+		)
+
 	def getFileContent(self, project, package, _file, revision = None):
 
 		# 'cat' is surprisingly difficult ... approach taken by the

@@ -135,6 +135,7 @@ class ApiDir(oscfs.types.DirNode):
 		self.m_num_revs_name = "num_revisions"
 		self.m_commits_dir_name = "commits"
 		self.m_rev_dir_name = "revisions"
+		self.m_req_dir_name = "requests"
 		self.m_commit_infos = None
 
 	def getCommitInfos(self):
@@ -165,7 +166,8 @@ class ApiDir(oscfs.types.DirNode):
 			(self.m_log_name, LogNode),
 			(self.m_num_revs_name, NumRevisionsNode),
 			(self.m_commits_dir_name, CommitsDir),
-			(self.m_rev_dir_name, RevisionsDir)
+			(self.m_rev_dir_name, RevisionsDir),
+			(self.m_req_dir_name, RequestsDir)
 		):
 			node = _type(self, self.m_parent, name)
 			self.m_entries[name] = node
@@ -257,6 +259,60 @@ class RevisionsDir(oscfs.types.DirNode):
 				package = self.m_package.getPackage(),
 				revision = info.getRevision()
 			)
+
+		self.setCacheFresh()
+
+class RequestNode(oscfs.types.Node):
+	"""This node contains the specific request info for a request."""
+
+	def __init__(self, parent, req, name):
+
+		super(RequestNode, self).__init__(parent, name)
+		self.m_req = req
+		self.m_text = str(req)
+		stat = self.getStat()
+		stat.setSize(len(self.m_text))
+
+		# set the modification time to the time of the last request
+		# modification
+		last_change = req.statehistory[-1].when
+		import datetime
+		dt = datetime.datetime.strptime(
+			last_change,
+			"%Y-%m-%dT%H:%M:%S"
+		)
+		stat.setModTime(dt)
+
+	def read(self, length, offset):
+		return self.m_text[offset:length]
+
+class RequestsDir(oscfs.types.DirNode):
+	"""This type provides access to all requests that exist for a
+	package. It allows to inspect individual requests directly."""
+
+	def __init__(self, parent, package, name):
+
+		super(RequestsDir, self).__init__(parent, name)
+		self.m_package = package
+
+	def getObs(self):
+
+		return self.m_parent.m_parent.getObs()
+
+	def update(self):
+		if not self.isCacheStale():
+			return
+
+		self.clearEntries()
+
+		obs = self.getObs()
+
+		for req in obs.getPackageRequestList(
+				project = self.m_parent.m_parent.getProject(),
+				package = self.m_package.getPackage()
+		):
+			label = "{}:{}".format(req.reqid, req.state.name)
+			self.m_entries[label] = RequestNode(self, req, label)
 
 		self.setCacheFresh()
 

@@ -78,7 +78,7 @@ class Stat(object):
 class Node(object):
 	"""Generic file node type which needs to be specialized for regular
 	files, directories et al.
-	
+
 	At this level a concept of caching is introduced to keep track of
 	fresh/stale entries etc.
 
@@ -166,7 +166,7 @@ class DirNode(Node):
 	def clearEntries(self):
 
 		self.m_entries = dict()
-			
+
 	def getEntries(self):
 
 		return self.m_entries
