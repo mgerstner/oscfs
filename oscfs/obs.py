@@ -5,6 +5,9 @@ from __future__ import with_statement, print_function
 from xml.etree import cElementTree as et
 import datetime
 
+# urllib2 replacement, needs to be imported before osc.core
+import oscfs.urlopenwrapper
+
 # third party modules
 import osc.core
 
