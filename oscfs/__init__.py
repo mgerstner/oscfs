@@ -9,7 +9,7 @@ try:
 	api_version = getattr(fuse, "APIVersion", None)
 	if api_version != None:
 		print("Wrong python fuse module is installed", file = sys.stderr)
-		print("oscfs required the fusepy module, this is the python-fuse module", file = sys.stderr)
+		print("oscfs requires the fusepy module, this is the python-fuse module", file = sys.stderr)
 		sys.exit(1)
 
 except ImportError:

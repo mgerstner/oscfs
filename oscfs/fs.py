@@ -116,6 +116,8 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 
 	def _allocFileHandle(self, node):
 
+		# TODO: this is inefficient and we should keep a kind of free
+		# list for constant time handle allocation
 		for i in range(len(self.m_handles)):
 
 			if self.m_handles[i] == None:
