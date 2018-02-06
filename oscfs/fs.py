@@ -51,6 +51,10 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 			help = "If set then maintenance projects will be included which is not the default"
 		)
 		self.m_parser.add_argument(
+			"--ptf", action = 'store_true',
+			help = "If set then PTF projects will be included which is not the default"
+		)
+		self.m_parser.add_argument(
 			"mountpoint", type = str,
 			help = "Path where to mount the file system"
 		)

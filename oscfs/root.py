@@ -61,6 +61,7 @@ class Root(oscfs.types.DirNode):
 
 			is_home = "home" in parts
 			is_maintenance = "Maintenance" in parts
+			is_ptf = "PTF" in parts
 
 			if is_home:
 				# if it's our own home then still keep it
@@ -68,6 +69,8 @@ class Root(oscfs.types.DirNode):
 				if not is_our_home and not self.m_args.homes:
 					continue
 			elif is_maintenance and not self.m_args.maintenance:
+				continue
+			elif is_ptf and not self.m_args.ptf:
 				continue
 
 			self.m_entries[project] = oscfs.project.Project(
