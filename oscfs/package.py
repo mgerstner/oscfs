@@ -75,58 +75,6 @@ class Package(oscfs.types.DirNode):
 
 		self.setCacheFresh()
 
-class LogNode(oscfs.types.Node):
-	"""This node type contains the commit log for the package it resides
-	in."""
-
-	def __init__(self, parent, package, name):
-
-		super(LogNode, self).__init__(parent, name)
-		self.m_package = package
-
-		self.m_log = self.fetchLog()
-		self.getStat().setSize(len(self.m_log))
-
-	def fetchLog(self):
-
-		package = self.m_package
-		obs = package.getObs()
-
-		log = obs.getCommitLog(package.getProject(), package.getName())
-
-		return log
-
-	def read(self, length, offset):
-
-		return self.m_log[offset:length]
-
-class NumRevisionsNode(oscfs.types.Node):
-	"""This node type contains the number of commits for the package it
-	resides in."""
-
-	def __init__(self, parent, package, name):
-
-		super(NumRevisionsNode, self).__init__(parent, name)
-		self.m_package = package
-
-		self.m_revisions = self.fetchRevisions()
-		self.getStat().setSize(len(self.m_revisions))
-
-	def fetchRevisions(self):
-
-		package = self.m_package
-		infos = self.m_parent.getCommitInfos()
-
-		return str(len(infos))
-
-	def read(self, length, offset):
-
-		return self.m_revisions[offset:length]
-
-	def getNumRevs(self):
-
-		return int(self.m_revisions)
-
 class ApiDir(oscfs.types.DirNode):
 	"""This type provides access to additional meta data for a package.
 	This is just the root directory for this which adds individual file
@@ -204,35 +152,6 @@ class ApiDir(oscfs.types.DirNode):
 
 		self.setCacheFresh()
 
-class CommitNode(oscfs.types.Node):
-	"""This node contains the specific commit info for a revision."""
-
-	def __init__(self, parent, info, name):
-
-		super(CommitNode, self).__init__(parent, name)
-		self.m_info = info
-		self.m_commit = self.buildCommit()
-		stat = self.getStat()
-		stat.setSize(len(self.m_commit))
-		stat.setModTime(self.m_info.getDate())
-
-	def buildCommit(self):
-
-		ret = "revision {r} | {user} | {date} | {req}\n".format(
-			r = self.m_info.getRevision(),
-			user = self.m_info.getAuthor(),
-			date = self.m_info.getDate().strftime("%X %x"),
-			req = self.m_info.getReqId()
-		)
-
-		ret += "-" * (len(ret) - 1)
-		ret += "\n"
-		ret += self.m_info.getMessage()
-		return ret
-
-	def read(self, length, offset):
-		return self.m_commit[offset:length]
-
 class CommitsDir(oscfs.types.DirNode):
 	"""This types provides access to each individual commit for a
 	package. Each commit is represented as an individual file."""
@@ -292,29 +211,98 @@ class RevisionsDir(oscfs.types.DirNode):
 
 		self.setCacheFresh()
 
-class RequestNode(oscfs.types.Node):
+
+class LogNode(oscfs.types.FileNode):
+	"""This node type contains the commit log for the package it resides
+	in."""
+
+	def __init__(self, parent, package, name):
+
+		super(LogNode, self).__init__(parent, name)
+		self.m_package = package
+
+		log = self.fetchLog()
+		self.setContent(log)
+
+	def fetchLog(self):
+
+		package = self.m_package
+		obs = package.getObs()
+
+		log = obs.getCommitLog(package.getProject(), package.getName())
+
+		return log
+
+class NumRevisionsNode(oscfs.types.FileNode):
+	"""This node type contains the number of commits for the package it
+	resides in."""
+
+	def __init__(self, parent, package, name):
+
+		super(NumRevisionsNode, self).__init__(parent, name)
+		self.m_package = package
+
+		self.m_revisions = self.fetchRevisions()
+		self.setContent(self.m_revisions)
+
+	def fetchRevisions(self):
+
+		package = self.m_package
+		infos = self.m_parent.getCommitInfos()
+
+		return str(len(infos))
+
+	def getNumRevs(self):
+
+		return int(self.m_revisions)
+
+
+class CommitNode(oscfs.types.FileNode):
+	"""This node contains the specific commit info for a revision."""
+
+	def __init__(self, parent, info, name):
+
+		super(CommitNode, self).__init__(parent, name)
+		self.m_info = info
+
+		commit = self.buildCommit()
+		self.setContent(commit, self.m_info.getDate())
+
+	def buildCommit(self):
+
+		ret = "revision {r} | {user} | {date} | {req}\n".format(
+			r = self.m_info.getRevision(),
+			user = self.m_info.getAuthor(),
+			date = self.m_info.getDate().strftime("%X %x"),
+			req = self.m_info.getReqId()
+		)
+
+		ret += "-" * (len(ret) - 1)
+		ret += "\n"
+		ret += self.m_info.getMessage()
+		return ret
+
+class RequestNode(oscfs.types.FileNode):
 	"""This node contains the specific request info for a request."""
 
 	def __init__(self, parent, req, name):
 
 		super(RequestNode, self).__init__(parent, name)
 		self.m_req = req
-		self.m_text = str(req)
-		stat = self.getStat()
-		stat.setSize(len(self.m_text))
+		text = str(req)
+		self.setContent(text, self.getReqModTime())
+
+	def getReqModTime(self):
 
 		# set the modification time to the time of the last request
 		# modification
-		last_change = req.statehistory[-1].when
+		last_change = self.m_req.statehistory[-1].when
 		import datetime
 		dt = datetime.datetime.strptime(
 			last_change,
 			"%Y-%m-%dT%H:%M:%S"
 		)
-		stat.setModTime(dt)
-
-	def read(self, length, offset):
-		return self.m_text[offset:length]
+		return dt
 
 class RequestsDir(oscfs.types.DirNode):
 	"""This type provides access to all requests that exist for a
@@ -346,7 +334,7 @@ class RequestsDir(oscfs.types.DirNode):
 
 		self.setCacheFresh()
 
-class MetaNode(oscfs.types.Node):
+class MetaNode(oscfs.types.FileNode):
 	"""This node type contains the raw XML metadata of a package."""
 
 	def __init__(self, parent, package, name):
@@ -354,14 +342,10 @@ class MetaNode(oscfs.types.Node):
 		super(MetaNode, self).__init__(parent, name)
 		self.m_package = package
 
-		self.m_meta = self.m_parent.getPkgMeta()
-		self.getStat().setSize(len(self.m_meta))
+		meta = self.m_parent.getPkgMeta()
+		self.setContent(meta)
 
-	def read(self, length, offset):
-
-		return self.m_meta[offset:length]
-
-class DescriptionNode(oscfs.types.Node):
+class DescriptionNode(oscfs.types.FileNode):
 	"""This node returns a formatted description of the package."""
 
 	def __init__(self, parent, package, name):
@@ -369,23 +353,17 @@ class DescriptionNode(oscfs.types.Node):
 		super(DescriptionNode, self).__init__(parent, name)
 		self.m_package = package
 
-		self.m_desc = self.fetchDesc()
-		self.getStat().setSize(len(self.m_desc))
-
-	def fetchDesc(self):
-
 		pkg_info = self.m_parent.getPkgInfo()
 
-		return "# {}\n\n{}".format(
+		import textwrap
+
+		desc = "# {}\n\n{}".format(
 			pkg_info.getTitle(),
-			pkg_info.getDesc()
+			'\n'.join(textwrap.wrap(pkg_info.getDesc()))
 		)
+		self.setContent(desc)
 
-	def read(self, length, offset):
-
-		return self.m_desc[offset:length]
-
-class MaintainersNode(oscfs.types.Node):
+class MaintainersNode(oscfs.types.FileNode):
 	"""This node returns a list of maintainers for the package."""
 
 	def __init__(self, parent, package, name):
@@ -393,20 +371,11 @@ class MaintainersNode(oscfs.types.Node):
 		super(MaintainersNode, self).__init__(parent, name)
 		self.m_package = package
 
-		self.m_maintainers = self.fetchMaintainers()
-		self.getStat().setSize(len(self.m_maintainers))
-
-	def fetchMaintainers(self):
-
 		pkg_info = self.m_parent.getPkgInfo()
+		maintainers = '\n'.join(pkg_info.getMaintainers())
+		self.setContent(maintainers)
 
-		return '\n'.join(pkg_info.getMaintainers())
-
-	def read(self, length, offset):
-
-		return self.m_maintainers[offset:length]
-
-class BugownersNode(oscfs.types.Node):
+class BugownersNode(oscfs.types.FileNode):
 	"""This node returns a list of bugownders for the package."""
 
 	def __init__(self, parent, package, name):
@@ -414,16 +383,7 @@ class BugownersNode(oscfs.types.Node):
 		super(BugownersNode, self).__init__(parent, name)
 		self.m_package = package
 
-		self.m_bugowners = self.fetchBugowners()
-		self.getStat().setSize(len(self.m_bugowners))
-
-	def fetchBugowners(self):
-
 		pkg_info = self.m_parent.getPkgInfo()
-
-		return '\n'.join(pkg_info.getBugowners())
-
-	def read(self, length, offset):
-
-		return self.m_bugowners[offset:length]
+		bugowners = '\n'.join(pkg_info.getBugowners())
+		self.setContent(bugowners)
 

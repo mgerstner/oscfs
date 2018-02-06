@@ -143,6 +143,23 @@ class Node(object):
 		system."""
 		return self.m_parent == None
 
+class FileNode(Node):
+
+	def __init__(self, parent, name):
+
+		super(FileNode, self).__init__(parent, name)
+
+	def setContent(self, content, date = None):
+		self.m_content = content
+		stat = self.getStat()
+		stat.setSize(len(content))
+
+		if date:
+			stat.setModTime(date)
+
+	def read(self, length, offset):
+		return self.m_content[offset:length]
+
 class DirNode(Node):
 
 	def __init__(self, parent, name):
