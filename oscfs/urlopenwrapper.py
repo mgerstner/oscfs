@@ -70,7 +70,8 @@ class UrlopenWrapper(object):
 					dict(req.header_items())
 				)
 
-				return connection.getresponse()
+				resp = connection.getresponse()
+				return self._extendedResponse(resp)
 			except httplib.BadStatusLine as e:
 				# probably an http keep-alive issue
 				#
@@ -83,6 +84,22 @@ class UrlopenWrapper(object):
 				if retries > 3:
 					# avoid an infinite loop
 					raise
+
+	def _extendedResponse(self, resp):
+		"""This function returns a httplib response object that
+		matches the expectations of the osc module."""
+		import functools
+
+		def responseReadlines(resp):
+			return resp.read().splitlines()
+
+		# the urrlib result allows readlines() to be called so we need
+		# to cover that, too.
+		resp.readlines = functools.partial(
+			responseReadlines, resp = resp
+		)
+
+		return resp
 
 	def _getConnection(self, proto, host, renew = False):
 
