@@ -33,6 +33,10 @@ class Package(oscfs.types.DirNode):
 
 		return self.m_package
 
+	def getRevision(self):
+
+		return self.m_revision
+
 	def _addApiDir(self):
 
 		api_name = ".oscfs"
@@ -131,12 +135,17 @@ class ApiDir(oscfs.types.DirNode):
 	def __init__(self, parent, name):
 
 		super(ApiDir, self).__init__(parent, name)
+		self.m_meta_name = "meta"
 		self.m_log_name = "log"
+		self.m_desc_name = "description"
+		self.m_maintainers_name = "maintainers"
+		self.m_bugowners_name = "bugowners"
 		self.m_num_revs_name = "num_revisions"
 		self.m_commits_dir_name = "commits"
 		self.m_rev_dir_name = "revisions"
 		self.m_req_dir_name = "requests"
 		self.m_commit_infos = None
+		self.m_pkg_meta = None
 
 	def getCommitInfos(self):
 		# centrally keep the commit infos for the package here to
@@ -151,6 +160,22 @@ class ApiDir(oscfs.types.DirNode):
 
 		return self.m_commit_infos
 
+	def getPkgMeta(self):
+
+		if not self.m_pkg_meta:
+			obs = self.m_parent.getObs()
+			self.m_pkg_meta = obs.getPackageMeta(
+				self.m_parent.getProject(),
+				self.m_parent.getName()
+			)
+
+		return self.m_pkg_meta
+
+	def getPkgInfo(self):
+
+		obs = self.m_parent.getObs()
+		return obs.parsePackageInfo(self.getPkgMeta())
+
 	def getNumRevsNode(self):
 
 		return self.m_entries[self.m_num_revs_name]
@@ -160,6 +185,7 @@ class ApiDir(oscfs.types.DirNode):
 			return
 
 		self.m_commit_infos = None
+		self.m_pkg_meta = None
 		self.clearEntries()
 
 		for name, _type in (
@@ -167,7 +193,11 @@ class ApiDir(oscfs.types.DirNode):
 			(self.m_num_revs_name, NumRevisionsNode),
 			(self.m_commits_dir_name, CommitsDir),
 			(self.m_rev_dir_name, RevisionsDir),
-			(self.m_req_dir_name, RequestsDir)
+			(self.m_req_dir_name, RequestsDir),
+			(self.m_meta_name, MetaNode),
+			(self.m_desc_name, DescriptionNode),
+			(self.m_maintainers_name, MaintainersNode),
+			(self.m_bugowners_name, BugownersNode)
 		):
 			node = _type(self, self.m_parent, name)
 			self.m_entries[name] = node
@@ -315,4 +345,85 @@ class RequestsDir(oscfs.types.DirNode):
 			self.m_entries[label] = RequestNode(self, req, label)
 
 		self.setCacheFresh()
+
+class MetaNode(oscfs.types.Node):
+	"""This node type contains the raw XML metadata of a package."""
+
+	def __init__(self, parent, package, name):
+
+		super(MetaNode, self).__init__(parent, name)
+		self.m_package = package
+
+		self.m_meta = self.m_parent.getPkgMeta()
+		self.getStat().setSize(len(self.m_meta))
+
+	def read(self, length, offset):
+
+		return self.m_meta[offset:length]
+
+class DescriptionNode(oscfs.types.Node):
+	"""This node returns a formatted description of the package."""
+
+	def __init__(self, parent, package, name):
+
+		super(DescriptionNode, self).__init__(parent, name)
+		self.m_package = package
+
+		self.m_desc = self.fetchDesc()
+		self.getStat().setSize(len(self.m_desc))
+
+	def fetchDesc(self):
+
+		pkg_info = self.m_parent.getPkgInfo()
+
+		return "# {}\n\n{}".format(
+			pkg_info.getTitle(),
+			pkg_info.getDesc()
+		)
+
+	def read(self, length, offset):
+
+		return self.m_desc[offset:length]
+
+class MaintainersNode(oscfs.types.Node):
+	"""This node returns a list of maintainers for the package."""
+
+	def __init__(self, parent, package, name):
+
+		super(MaintainersNode, self).__init__(parent, name)
+		self.m_package = package
+
+		self.m_maintainers = self.fetchMaintainers()
+		self.getStat().setSize(len(self.m_maintainers))
+
+	def fetchMaintainers(self):
+
+		pkg_info = self.m_parent.getPkgInfo()
+
+		return '\n'.join(pkg_info.getMaintainers())
+
+	def read(self, length, offset):
+
+		return self.m_maintainers[offset:length]
+
+class BugownersNode(oscfs.types.Node):
+	"""This node returns a list of bugownders for the package."""
+
+	def __init__(self, parent, package, name):
+
+		super(BugownersNode, self).__init__(parent, name)
+		self.m_package = package
+
+		self.m_bugowners = self.fetchBugowners()
+		self.getStat().setSize(len(self.m_bugowners))
+
+	def fetchBugowners(self):
+
+		pkg_info = self.m_parent.getPkgInfo()
+
+		return '\n'.join(pkg_info.getBugowners())
+
+	def read(self, length, offset):
+
+		return self.m_bugowners[offset:length]
 
