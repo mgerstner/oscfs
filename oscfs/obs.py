@@ -208,6 +208,47 @@ class Obs(object):
 			key = lambda r: r.getRevision()
 		)
 
+	def getPackageMeta(self, project, package):
+		"""Returns a string consisting of the XML that makes up the
+		specified package's metadata."""
+
+		xml_lines = osc.core.show_package_meta(
+			self.m_apiurl,
+			project,
+			package
+		)
+
+		return '\n'.join(xml_lines)
+
+	def getPackageInfo(self, project, package):
+		"""Returns an object of type PackageInfo for the given
+		package."""
+		xml = self.getPackageMeta(project, package)
+		return self.parsePackageInfo(xml)
+
+	def parsePackageInfo(self, pkg_meta_xml):
+		"""Parses a package meta XML string and returns a PackageInfo
+		instance for it."""
+
+		tree = et.fromstring(pkg_meta_xml)
+
+		pi = PackageInfo()
+
+		for el in tree:
+			if el.tag == "title":
+				pi.setTitle(el.text)
+			elif el.tag == "description":
+				pi.setDesc(el.text)
+			elif el.tag == "person":
+				role = el.attrib["role"]
+				user = el.attrib["userid"]
+				if role == "bugowner":
+					pi.addBugowner(user)
+				elif role == "maintainer":
+					pi.addMaintainer(user)
+
+		return pi
+
 class CommitInfo(object):
 
 	def __init__(self, revision):
@@ -253,3 +294,40 @@ class CommitInfo(object):
 			self.getReqId()
 		)
 
+class PackageInfo(object):
+
+	def __init__(self):
+		self.m_title = ""
+		self.m_desc = ""
+		self.m_maintainers = []
+		self.m_bugowners = []
+
+	def setTitle(self, title):
+		self.m_title = title
+
+	def getTitle(self):
+		return self.m_title
+
+	def setDesc(self, desc):
+		self.m_desc = desc
+
+	def getDesc(self):
+		return self.m_desc
+
+	def setMaintainers(self, maintainers):
+		self.m_maintainers = maintainers
+
+	def addMaintainer(self, maintainer):
+		self.m_maintainers.append(maintainer)
+
+	def getMaintainers(self):
+		return self.m_maintainers
+
+	def setBugowners(self, bugowners):
+		self.m_bugowners = bugowners
+
+	def addBugowner(self, bugowner):
+		self.m_bugowners.append(bugowner)
+
+	def getBugowners(self):
+		return self.m_bugowners
