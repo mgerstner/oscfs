@@ -359,9 +359,17 @@ class DescriptionNode(oscfs.types.FileNode):
 
 		import textwrap
 
+		# Note: some packages don't have a title/description value
+		title = pkg_info.getTitle()
+		if not title:
+			title = self.m_package.getPackage()
+		desc = pkg_info.getDesc()
+		if not desc:
+			desc = "no description available"
+
 		desc = "# {}\n\n{}".format(
-			pkg_info.getTitle(),
-			'\n'.join(textwrap.wrap(pkg_info.getDesc()))
+			title,
+			'\n'.join(textwrap.wrap(desc))
 		)
 		self.setContent(desc)
 
