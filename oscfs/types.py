@@ -55,7 +55,9 @@ class Stat(object):
 	def setSize(self, size):
 		"""Sets the size of the node in bytes."""
 
+		import math
 		self.st_size = size
+		self.st_blocks = int(math.ceil(size / 512.0))
 
 	def setModTime(self, tm):
 
