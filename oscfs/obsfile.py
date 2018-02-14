@@ -6,13 +6,13 @@ from __future__ import with_statement, print_function
 # local modules
 import oscfs.types
 
-class File(oscfs.types.Node):
+class ObsFile(oscfs.types.Node):
 	"""This type represents a regular file in an OBS package which can
 	return actual file content via read()."""
 
 	def __init__(self, parent, name, size, mtime, revision = None):
 
-		super(File, self).__init__(parent, name)
+		super(ObsFile, self).__init__(parent, name)
 		self.m_revision = revision
 
 		stat = self.getStat()

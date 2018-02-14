@@ -6,7 +6,7 @@ from __future__ import with_statement, print_function
 # local modules
 import oscfs.types
 import oscfs.obs
-import oscfs.file
+import oscfs.obsfile
 import oscfs.link
 
 class Package(oscfs.types.DirNode):
@@ -58,7 +58,7 @@ class Package(oscfs.types.DirNode):
 			revision = self.m_revision
 		):
 			if ft == types.regular:
-				node = oscfs.file.File(
+				node = oscfs.obsfile.ObsFile(
 					self, name, size, mtime,
 					revision = self.m_revision
 				)
