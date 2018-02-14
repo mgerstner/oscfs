@@ -146,8 +146,11 @@ class PkgApiDir(oscfs.types.DirNode):
 			(self.m_maintainers_name, MaintainersNode),
 			(self.m_bugowners_name, BugownersNode)
 		):
-			node = _type(self, self.m_parent, name)
-			self.m_entries[name] = node
+			try:
+				node = _type(self, self.m_parent, name)
+				self.m_entries[name] = node
+			except Exception as e:
+				print("Failed to add", name, "entry:", e)
 
 		self.setCacheFresh()
 
