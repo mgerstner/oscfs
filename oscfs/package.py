@@ -121,8 +121,7 @@ class PkgApiDir(oscfs.types.DirNode):
 
 	def getPkgInfo(self):
 
-		obs = self.m_parent.getObs()
-		return obs.parsePackageInfo(self.getPkgMeta())
+		return oscfs.obs.PackageInfo(self.getPkgMeta())
 
 	def getNumRevsNode(self):
 
