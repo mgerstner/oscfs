@@ -159,6 +159,9 @@ class FileNode(Node):
 		if date:
 			stat.setModTime(date)
 
+	def setBoolean(self, value):
+		self.setContent("1" if value else "0")
+
 	def read(self, length, offset):
 		return self.m_content[offset:length]
 
