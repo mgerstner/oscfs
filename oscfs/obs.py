@@ -42,6 +42,20 @@ class Obs(object):
 
 		return ret
 
+	def getProjectMeta(self, project):
+		"""Returns a string consisting of the XML that makes up the
+		specified project's metadata."""
+
+		xml_lines = osc.core.show_project_meta(self.m_apiurl, project)
+
+		return '\n'.join(xml_lines)
+
+	def getProjectInfo(self, project):
+		"""Returns an object of type ProjectInfo for the given
+		project."""
+		xml = self.getProjectMeta(project)
+		return ProjectInfo(xml)
+
 	def getPackageList(self, project):
 		"""Returns a list of all the packages withing a top-level
 		project. It's a list of plain strings."""
@@ -224,30 +238,7 @@ class Obs(object):
 		"""Returns an object of type PackageInfo for the given
 		package."""
 		xml = self.getPackageMeta(project, package)
-		return self.parsePackageInfo(xml)
-
-	def parsePackageInfo(self, pkg_meta_xml):
-		"""Parses a package meta XML string and returns a PackageInfo
-		instance for it."""
-
-		tree = et.fromstring(pkg_meta_xml)
-
-		pi = PackageInfo()
-
-		for el in tree:
-			if el.tag == "title":
-				pi.setTitle(el.text)
-			elif el.tag == "description":
-				pi.setDesc(el.text)
-			elif el.tag == "person":
-				role = el.attrib["role"]
-				user = el.attrib["userid"]
-				if role == "bugowner":
-					pi.addBugowner(user)
-				elif role == "maintainer":
-					pi.addMaintainer(user)
-
-		return pi
+		return PackageInfo(xml)
 
 class CommitInfo(object):
 
@@ -294,22 +285,23 @@ class CommitInfo(object):
 			self.getReqId()
 		)
 
-class PackageInfo(object):
+class InfoBase(object):
 
-	def __init__(self):
+	def reset(self):
 		self.m_title = ""
 		self.m_desc = ""
 		self.m_maintainers = []
 		self.m_bugowners = []
+		self.m_readers = []
 
 	def setTitle(self, title):
-		self.m_title = title
+		self.m_title = title if title != None else ""
 
 	def getTitle(self):
 		return self.m_title
 
 	def setDesc(self, desc):
-		self.m_desc = desc
+		self.m_desc = desc if desc != None else ""
 
 	def getDesc(self):
 		return self.m_desc
@@ -331,3 +323,182 @@ class PackageInfo(object):
 
 	def getBugowners(self):
 		return self.m_bugowners
+
+	def addReader(self, reader):
+		self.m_readers.append(reader)
+
+	def getReaders(self):
+		return self.m_readers
+
+	def _addRole(self, subject, role):
+		if role == "bugowner":
+			self.addBugowner(subject)
+		elif role == "maintainer":
+			self.addMaintainer(subject)
+		elif role == "reader":
+			self.addReader(subject)
+
+	def parseXmlElement(self, el):
+
+		if el.tag == "title":
+			self.setTitle(el.text)
+		elif el.tag == "description":
+			self.setDesc(el.text)
+		elif el.tag == "person":
+			role = el.attrib["role"]
+			user = el.attrib["userid"]
+			self._addRole(user, role)
+		elif el.tag == "group":
+			role = el.attrib["role"]
+			group = el.attrib["groupid"]
+			group = "@{}".format(group)
+			self._addRole(group, role)
+		else:
+			return False
+
+		return True
+
+class PackageInfo(InfoBase):
+	"""Collective meta information about a package."""
+
+	def __init__(self, meta_xml = None):
+		if meta_xml:
+			self.parse(meta_xml)
+		else:
+			self.reset()
+
+	def parse(self, meta_xml):
+		"""Parses a package meta XML string and fills the object's
+		values from it."""
+
+		self.reset()
+		tree = et.fromstring(meta_xml)
+
+		for el in tree:
+			if self.parseXmlElement(el):
+				continue
+
+class Repository(object):
+	"""Collective meta information about a repository in a
+	project/package."""
+
+	def __init__(self, xml_node):
+		if xml_node:
+			self.parse(xml_node)
+		else:
+			self.reset()
+
+	def reset(self):
+		self.m_name = ""
+		self.m_project = ""
+		self.m_repo = ""
+		self.m_archs = []
+		self.m_release_target = None
+
+	def parse(self, xml_node):
+		self.reset()
+
+		name = xml_node.attrib["name"]
+		self.setName(name)
+
+		for child in xml_node:
+			if child.tag == "path":
+				attrs = child.attrib
+				project = attrs["project"]
+				repo = attrs["repository"]
+				self.setProject(project)
+				self.setRepository(repo)
+			elif child.tag == "arch":
+				arch = child.text
+				self.addArch(arch)
+			elif child.tag == "releasetarget":
+				attrs = child.attrib
+				project = attrs["project"]
+				repo = attrs["repository"]
+				self.setReleaseTarget(project, repo)
+
+	def getName(self):
+		return self.m_name
+
+	def setName(self, name):
+		self.m_name = name
+
+	def getProject(self):
+		return self.m_project
+
+	def setProject(self, project):
+		self.m_project = project
+
+	def getRepository(self):
+		return self.m_repo
+
+	def setRepository(self, repo):
+		self.m_repo = repo
+
+	def getArchs(self):
+		return self.m_archs
+
+	def addArch(self, arch):
+		self.m_archs.append(arch)
+
+	def getReleaseTarget(self):
+		return self.m_release_target
+
+	def setReleaseTarget(self, project, repo):
+		self.m_release_target = (project, repo)
+
+class ProjectInfo(InfoBase):
+	"""Collective meta information about a project."""
+
+	def __init__(self, meta_xml = None):
+		if meta_xml:
+			self.parse(meta_xml)
+		else:
+			self.reset()
+
+	def reset(self):
+		InfoBase.reset(self)
+		self.m_repos = []
+		self.m_debuginfo = None
+		self.m_locked = False
+
+	def parse(self, meta_xml):
+		"""Parses a project meta XML string and fills the object's
+		values from it."""
+
+		self.reset()
+		tree = et.fromstring(meta_xml)
+
+		for el in tree:
+			if self.parseXmlElement(el):
+				continue
+			elif el.tag == "debuginfo":
+				self.setDebuginfoEnabled(False)
+				for child in el:
+					if child.tag == "enable":
+						self.setDebuginfoEnabled(True)
+			elif el.tag == "repository":
+				repo = Repository(el)
+				self.addRepo(repo)
+			elif el.tag == "lock":
+				for child in el:
+					if child.tag == "enable":
+						self.setLocked(True)
+
+	def getDebuginfoEnabled(self):
+		return self.m_debuginfo
+
+	def setDebuginfoEnabled(self, enabled):
+		self.m_debuginfo = enabled
+
+	def getRepos(self):
+		return self.m_repos
+
+	def addRepo(self, repo):
+		self.m_repos.append(repo)
+
+	def getLocked(self):
+		return self.m_locked
+
+	def setLocked(self, locked):
+		self.m_locked = locked
