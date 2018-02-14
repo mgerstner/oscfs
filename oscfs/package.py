@@ -40,7 +40,7 @@ class Package(oscfs.types.DirNode):
 	def _addApiDir(self):
 
 		api_name = ".oscfs"
-		self.m_entries[api_name] = ApiDir(self, api_name)
+		self.m_entries[api_name] = PkgApiDir(self, api_name)
 
 	def update(self):
 
@@ -75,14 +75,14 @@ class Package(oscfs.types.DirNode):
 
 		self.setCacheFresh()
 
-class ApiDir(oscfs.types.DirNode):
+class PkgApiDir(oscfs.types.DirNode):
 	"""This type provides access to additional meta data for a package.
 	This is just the root directory for this which adds individual file
 	and directory nodes that represent actual API features."""
 
 	def __init__(self, parent, name):
 
-		super(ApiDir, self).__init__(parent, name)
+		super(PkgApiDir, self).__init__(parent, name)
 		self.m_meta_name = "meta"
 		self.m_log_name = "log"
 		self.m_desc_name = "description"
