@@ -20,6 +20,7 @@ class Link(oscfs.types.Node):
 
 		stat = self.getStat()
 		stat.setSize(len(self.m_target))
+		stat.setMode(0o777)
 
 	def readlink(self):
 

@@ -24,6 +24,7 @@ class Stat(object):
 	def __init__(self):
 		import stat
 		super(Stat, self).__init__()
+		# TODO: incorporate umask?
 		self.st_mode = 0o400 | stat.S_IFREG
 		self.st_uid = oscfs.misc.getUid()
 		self.st_gid = oscfs.misc.getGid()
@@ -76,6 +77,17 @@ class Stat(object):
 				ret[attr] = getattr(self, attr)
 
 		return ret
+
+	def setLinks(self, links):
+		self.st_nlink = links
+
+	def setMode(self, mode):
+
+		if mode > 0o777:
+			raise Exception("Invalid mode encountered")
+
+		self.st_mode &= ~0o777
+		self.st_mode |= mode
 
 class Node(object):
 	"""Generic file node type which needs to be specialized for regular
@@ -146,6 +158,9 @@ class Node(object):
 		return self.m_parent == None
 
 class FileNode(Node):
+	"""Specialized Node type for read-only regular files. Implementations
+	of this type can set the current content of the file via setContent()
+	and everything else is cared for."""
 
 	def __init__(self, parent, name):
 
@@ -166,6 +181,8 @@ class FileNode(Node):
 		return self.m_content[offset:length]
 
 class DirNode(Node):
+	"""Specialized Node type for directories. This type introduces a
+	dictionary of name -> Node mappings."""
 
 	def __init__(self, parent, name):
 
@@ -174,6 +191,8 @@ class DirNode(Node):
 			name,
 			_type = FileType.directory
 		)
+		# correct link count for directories
+		self.getStat().setLinks(2)
 		self.clearEntries()
 
 	def getNames(self):
