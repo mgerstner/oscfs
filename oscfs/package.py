@@ -8,6 +8,7 @@ import oscfs.types
 import oscfs.obs
 import oscfs.obsfile
 import oscfs.link
+import oscfs.refreshtrigger
 
 class Package(oscfs.types.DirNode):
 	"""This type represents a package node of the file system containing
@@ -92,6 +93,7 @@ class PkgApiDir(oscfs.types.DirNode):
 		self.m_commits_dir_name = "commits"
 		self.m_rev_dir_name = "revisions"
 		self.m_req_dir_name = "requests"
+		self.m_refresh_trigger = "refresh"
 		self.m_commit_infos = None
 		self.m_pkg_meta = None
 
@@ -144,7 +146,9 @@ class PkgApiDir(oscfs.types.DirNode):
 			(self.m_meta_name, MetaNode),
 			(self.m_desc_name, DescriptionNode),
 			(self.m_maintainers_name, MaintainersNode),
-			(self.m_bugowners_name, BugownersNode)
+			(self.m_bugowners_name, BugownersNode),
+			(self.m_refresh_trigger,
+				oscfs.refreshtrigger.RefreshTrigger)
 		):
 			try:
 				node = _type(self, self.m_parent, name)

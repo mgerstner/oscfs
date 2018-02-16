@@ -7,6 +7,7 @@ from __future__ import with_statement, print_function
 import oscfs.types
 import oscfs.obs
 import oscfs.package
+import oscfs.refreshtrigger
 
 class Project(oscfs.types.DirNode):
 	"""This type represents a project node of the file system containing
@@ -71,6 +72,7 @@ class PrjApiDir(oscfs.types.DirNode):
 		self.m_repositories_name = "repositories"
 		self.m_locked_name = "locked"
 		self.m_readers_name = "readers"
+		self.m_refresh_trigger = "refresh"
 		self.m_prj_meta = None
 
 	def update(self):
@@ -87,7 +89,9 @@ class PrjApiDir(oscfs.types.DirNode):
 			(self.m_debuginfo_name, DebuginfoNode),
 			(self.m_repositories_name, RepositoriesNode),
 			(self.m_locked_name, LockedNode),
-			(self.m_readers_name, ReadersNode)
+			(self.m_readers_name, ReadersNode),
+			(self.m_refresh_trigger,
+				oscfs.refreshtrigger.RefreshTrigger)
 		):
 			try:
 				node = _type(self, self.m_parent, name)

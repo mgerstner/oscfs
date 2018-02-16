@@ -153,19 +153,41 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 		if fh != None:
 			self._freeFileHandle(fh)
 
+	def truncate(self, path, length, fh = None):
+
+		node = self._getNode(path, fh)
+		if node.getStat().isWriteable():
+			# be tolerant for pseudo files such that "echo '1'
+			# >file" works.
+			return
+
+		# otherwise report an error
+		raise fuse.FuseOSError(errno.EPERM)
+
 	def open(self, path, flags):
 
-		# deny writing
-		for badflag in (os.O_RDWR, os.O_WRONLY, os.O_CREAT):
-			if (flags & badflag) != 0:
-				raise fuse.FuseOSError(errno.EPERM)
-
 		node = self._getNode(path)
+
+		if not node.getStat().isWriteable():
+			# deny writing
+			for badflag in (os.O_RDWR, os.O_WRONLY, os.O_CREAT):
+				if (flags & badflag) != 0:
+					raise fuse.FuseOSError(errno.EPERM)
+
 		return self._allocFileHandle(node)
 
 	def read(self, path, length, offset, fh):
 
 		node = self._getNode(path, fh)
 
+		if not node.getStat().isReadable():
+			raise fuse.FuseOSError(errno.EBADF)
+
 		return node.read(length, offset)
+
+	def write(self, path, data, offset, fh):
+
+		node = self._getNode(path, fh)
+
+		return node.write(data, offset)
 

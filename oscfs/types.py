@@ -4,6 +4,8 @@
 from __future__ import with_statement, print_function
 import datetime
 import time
+import stat
+import errno
 
 # third party modules
 import fuse
@@ -22,7 +24,6 @@ class Stat(object):
 	start_time = datetime.datetime.now()
 
 	def __init__(self):
-		import stat
 		super(Stat, self).__init__()
 		# TODO: incorporate umask?
 		self.st_mode = 0o400 | stat.S_IFREG
@@ -89,6 +90,12 @@ class Stat(object):
 		self.st_mode &= ~0o777
 		self.st_mode |= mode
 
+	def isReadable(self):
+		return (self.st_mode & stat.S_IRUSR) != 0
+
+	def isWriteable(self):
+		return (self.st_mode & stat.S_IWUSR) != 0
+
 class Node(object):
 	"""Generic file node type which needs to be specialized for regular
 	files, directories et al.
@@ -135,6 +142,9 @@ class Node(object):
 	def setCacheFresh(self):
 		self.m_last_updated = datetime.datetime.now()
 
+	def setCacheStale(self):
+		self.m_last_updated = None
+
 	def setType(self, _type):
 		self.m_type = _type
 		self.m_stat.setFileType(_type)
@@ -180,6 +190,38 @@ class FileNode(Node):
 	def read(self, length, offset):
 		return self.m_content[offset:length]
 
+class TriggerNode(Node):
+	"""Specialized Node type for writable pseudo files. It expects a
+	boolean value of 0 or 1 as write content. If it is encountered then a
+	virtual method is called which can be overwritten by derived classes.
+	"""
+
+	def __init__(self, parent, name):
+
+		super(TriggerNode, self).__init__(parent, name)
+		self.getStat().setMode(0o200)
+
+	def triggered(self, value):
+		"""This method needs to be implemented to react on valid
+		boolean values written to the file."""
+		pass
+
+	def write(self, data, offset):
+
+		def bad():
+			raise fuse.FuseOSError(errno.EINVAL)
+
+		if offset != 0:
+			bad()
+		elif data.strip() == "0":
+			self.triggered(False)
+		elif data.strip() == "1":
+			self.triggered(True)
+		else:
+			bad()
+
+		return len(data)
+
 class DirNode(Node):
 	"""Specialized Node type for directories. This type introduces a
 	dictionary of name -> Node mappings."""
@@ -211,4 +253,11 @@ class DirNode(Node):
 	def getEntries(self):
 
 		return self.m_entries
+
+	def setCacheStale(self):
+
+		Node.setCacheStale(self)
+
+		for entry in self.m_entries.values():
+			entry.setCacheStale()
 
