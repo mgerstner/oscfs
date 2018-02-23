@@ -3,7 +3,11 @@
 
 from __future__ import with_statement, print_function
 
-import module_helper
+try:
+	import module_helper
+except ImportError:
+	# if oscfs is normally installed then this is okay
+	pass
 import oscfs.fs
 import oscfs.misc
 
