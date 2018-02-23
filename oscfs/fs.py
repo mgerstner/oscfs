@@ -40,7 +40,7 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 		)
 		self.m_parser.add_argument(
 			"--apiurl", type = str, default = self.m_default_url,
-			help = "The API URL of the OBS instance. OpenSUSE build service is used by default"
+			help = "The API URL of the OBS instance. openSUSE build service is used by default"
 		)
 		self.m_parser.add_argument(
 			"--homes", action = 'store_true',
