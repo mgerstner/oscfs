@@ -21,6 +21,7 @@ class Package(oscfs.types.DirNode):
 		self.m_revision = revision
 		self.m_project = project
 		self.m_package = package
+		self.m_api_name = ".oscfs"
 
 	def getObs(self):
 
@@ -38,17 +39,43 @@ class Package(oscfs.types.DirNode):
 
 		return self.m_revision
 
+	def getCommitInfos(self):
+		obs = self.getObs()
+		return obs.getCommitInfos(
+			self.getProject(),
+			self.getName()
+		)
+
 	def _addApiDir(self):
 
-		api_name = ".oscfs"
+		api_name = self.m_api_name
 		self.m_entries[api_name] = PkgApiDir(self, api_name)
 
-	def update(self):
+	def _canKeepCache(self):
 
-		if not self.isCacheStale():
-			return
+		if not self.wasEverUpdated():
+			return False
 
-		self.clearEntries()
+		if self.m_revision is not None:
+			# if we are fixed to a certain revision then there is
+			# no need to update anything
+			return True
+
+	def _existsNewRevision(self):
+
+		if not self.wasEverUpdated():
+			return True
+
+		api_dir = self.m_entries[self.m_api_name]
+
+		infos = self.getCommitInfos()
+		if len(infos) == len(api_dir.getCachedCommitInfos()):
+			# nothing new was commited
+			return True
+
+		return False
+
+	def _addPackageFiles(self):
 
 		obs = self.m_parent.getObs()
 
@@ -68,6 +95,17 @@ class Package(oscfs.types.DirNode):
 			else:
 				raise Exception("Unexpected type")
 			self.m_entries[name] = node
+
+	def update(self):
+
+		if not self.isCacheStale():
+			return
+		elif self._canKeepCache():
+			return
+
+		if self._existsNewRevision():
+			self.clearEntries()
+			self._addPackageFiles()
 
 		if not self.m_revision:
 			# only add the API dir for the current version of the
@@ -97,16 +135,12 @@ class PkgApiDir(oscfs.types.DirNode):
 		self.m_commit_infos = None
 		self.m_pkg_meta = None
 
-	def getCommitInfos(self):
+	def getCachedCommitInfos(self):
 		# centrally keep the commit infos for the package here to
 		# avoid multiple queries for the same data in child nodes
 
 		if not self.m_commit_infos:
-			obs = self.m_parent.getObs()
-			self.m_commit_infos = obs.getCommitInfos(
-				self.m_parent.getProject(),
-				self.m_parent.getName()
-			)
+			self.m_commit_infos = self.m_parent.getCommitInfos()
 
 		return self.m_commit_infos
 
@@ -174,7 +208,7 @@ class CommitsDir(oscfs.types.DirNode):
 		self.clearEntries()
 
 		package = self.m_package
-		infos = self.m_parent.getCommitInfos()
+		infos = self.m_parent.getCachedCommitInfos()
 
 		for rev in range(len(infos)):
 			info = infos[rev]
@@ -206,7 +240,7 @@ class RevisionsDir(oscfs.types.DirNode):
 
 		package = self.m_package
 
-		for info in self.m_parent.getCommitInfos():
+		for info in self.m_parent.getCachedCommitInfos():
 			name = str(info.getRevision())
 			self.m_entries[name] = Package(
 				self, name,
@@ -254,7 +288,7 @@ class NumRevisionsNode(oscfs.types.FileNode):
 	def fetchRevisions(self):
 
 		package = self.m_package
-		infos = self.m_parent.getCommitInfos()
+		infos = self.m_parent.getCachedCommitInfos()
 
 		return str(len(infos))
 
