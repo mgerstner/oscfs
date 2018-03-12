@@ -261,6 +261,7 @@ class LogNode(oscfs.types.FileNode):
 		super(LogNode, self).__init__(parent, name)
 		self.m_package = package
 
+	def fetchContent(self):
 		log = self.fetchLog()
 		self.setContent(log)
 
@@ -281,7 +282,9 @@ class NumRevisionsNode(oscfs.types.FileNode):
 
 		super(NumRevisionsNode, self).__init__(parent, name)
 		self.m_package = package
+		self.m_revisions = None
 
+	def fetchContent(self):
 		self.m_revisions = self.fetchRevisions()
 		self.setContent(self.m_revisions)
 
@@ -293,6 +296,9 @@ class NumRevisionsNode(oscfs.types.FileNode):
 		return str(len(infos))
 
 	def getNumRevs(self):
+
+		if self.m_revisions is None:
+			self.fetchContent()
 
 		return int(self.m_revisions)
 
@@ -382,6 +388,7 @@ class MetaNode(oscfs.types.FileNode):
 		super(MetaNode, self).__init__(parent, name)
 		self.m_package = package
 
+	def fetchContent(self):
 		meta = self.m_parent.getPkgMeta()
 		self.setContent(meta)
 
@@ -393,6 +400,7 @@ class DescriptionNode(oscfs.types.FileNode):
 		super(DescriptionNode, self).__init__(parent, name)
 		self.m_package = package
 
+	def fetchContent(self):
 		pkg_info = self.m_parent.getPkgInfo()
 
 		import textwrap
@@ -419,6 +427,7 @@ class MaintainersNode(oscfs.types.FileNode):
 		super(MaintainersNode, self).__init__(parent, name)
 		self.m_package = package
 
+	def fetchContent(self):
 		pkg_info = self.m_parent.getPkgInfo()
 		maintainers = '\n'.join(pkg_info.getMaintainers())
 		self.setContent(maintainers)
@@ -431,6 +440,7 @@ class BugownersNode(oscfs.types.FileNode):
 		super(BugownersNode, self).__init__(parent, name)
 		self.m_package = package
 
+	def fetchContent(self):
 		pkg_info = self.m_parent.getPkgInfo()
 		bugowners = '\n'.join(pkg_info.getBugowners())
 		self.setContent(bugowners)

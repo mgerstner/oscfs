@@ -170,11 +170,14 @@ class Node(object):
 class FileNode(Node):
 	"""Specialized Node type for read-only regular files. Implementations
 	of this type can set the current content of the file via setContent()
-	and everything else is cared for."""
+	in their constructors and everything else is cared for. For lazy
+	evaluation of file content implement fetchContent() which should call
+	setContent() in turn."""
 
 	def __init__(self, parent, name):
 
 		super(FileNode, self).__init__(parent, name)
+		self.m_content = None
 
 	def setContent(self, content, date = None):
 		self.m_content = content
@@ -188,6 +191,8 @@ class FileNode(Node):
 		self.setContent("1" if value else "0")
 
 	def read(self, length, offset):
+		if self.m_content is None:
+			self.fetchContent()
 		return self.m_content[offset:length]
 
 class TriggerNode(Node):

@@ -91,7 +91,8 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 			self,
 			self.m_args.mountpoint,
 			foreground = self.m_args.f,
-			nothreads = True
+			nothreads = True,
+			direct_io = True
 		)
 
 	# global file system methods
