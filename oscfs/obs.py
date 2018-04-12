@@ -293,6 +293,7 @@ class InfoBase(object):
 		self.m_maintainers = []
 		self.m_bugowners = []
 		self.m_readers = []
+		self.m_devel_project = ""
 
 	def setTitle(self, title):
 		self.m_title = title if title != None else ""
@@ -330,6 +331,12 @@ class InfoBase(object):
 	def getReaders(self):
 		return self.m_readers
 
+	def setDevelProject(self, project):
+		self.m_devel_project = project
+
+	def getDevelProject(self):
+		return self.m_devel_project
+
 	def _addRole(self, subject, role):
 		if role == "bugowner":
 			self.addBugowner(subject)
@@ -353,6 +360,9 @@ class InfoBase(object):
 			group = el.attrib["groupid"]
 			group = "@{}".format(group)
 			self._addRole(group, role)
+		elif el.tag == "devel":
+			project = el.attrib["project"]
+			self.setDevelProject(project)
 		else:
 			return False
 

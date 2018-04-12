@@ -190,6 +190,16 @@ class PkgApiDir(oscfs.types.DirNode):
 			except Exception as e:
 				print("Failed to add", name, "entry:", e)
 
+		devel_proj = self.getPkgInfo().getDevelProject()
+		if devel_proj:
+			devel_link = "develproject"
+			target = "{}/{}".format(
+					devel_proj,
+					self.m_parent.getPackage()
+			)
+			self.m_entries[devel_link] = \
+				oscfs.link.Link(self, devel_link, target)
+
 		self.setCacheFresh()
 
 class CommitsDir(oscfs.types.DirNode):
