@@ -92,6 +92,9 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 			self.m_args.mountpoint,
 			foreground = self.m_args.f,
 			nothreads = True,
+			# direct_io is necessary in our use case to avoid
+			# caching in the kernel and support dynamically
+			# determined file contents
 			direct_io = True
 		)
 
