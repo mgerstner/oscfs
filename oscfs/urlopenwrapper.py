@@ -58,7 +58,6 @@ class UrlopenWrapper(object):
 			)
 			req.add_unredirected_header("Authorization", auth)
 
-
 		connection = self._getConnection(proto, host)
 		retries = 0
 		while True:
@@ -93,10 +92,25 @@ class UrlopenWrapper(object):
 		def responseReadlines(resp):
 			return resp.read().splitlines()
 
+		def responseInfo(resp):
+			return resp
+
+		def responseGet(header, resp):
+			return resp.getheader(header)
+
 		# the urrlib result allows readlines() to be called so we need
 		# to cover that, too.
 		resp.readlines = functools.partial(
 			responseReadlines, resp = resp
+		)
+		# info() on urrlib2 objects returns a HTTPMessage object which
+		# we need to emulate
+		resp.info = functools.partial(
+			responseInfo, resp = resp
+		)
+		# emulate info().get('My-Header') to retrieve headers
+		resp.get = functools.partial(
+			responseGet, resp = resp
 		)
 
 		return resp

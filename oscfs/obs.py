@@ -240,6 +240,25 @@ class Obs(object):
 		xml = self.getPackageMeta(project, package)
 		return PackageInfo(xml)
 
+	def getBuildlog(self, project, package, repo, arch):
+
+		url = '/'.join( [
+			self.m_apiurl,
+			"build",
+			project, repo, arch, package,
+			"_log?start=0&nostream=1"
+		] )
+
+		ret = ""
+
+		# NOTE: streamfile supports bufsize="line" to read line wise
+		# and supports yield semantics. This breaks with our
+		# urlopenwrapper hack, however so we don't use it.
+		for line in osc.core.streamfile(url):
+			ret += line
+
+		return ret
+
 class CommitInfo(object):
 
 	def __init__(self, revision):
