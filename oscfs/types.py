@@ -219,7 +219,8 @@ class FileNode(Node):
 	def read(self, length, offset):
 		if self.m_content is None:
 			self.fetchContent()
-		return self.m_content[offset:length]
+
+		return self.m_content[offset:offset+length]
 
 class TriggerNode(Node):
 	"""Specialized Node type for writable pseudo files. It expects a
