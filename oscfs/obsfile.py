@@ -19,21 +19,13 @@ class ObsFile(oscfs.types.Node):
 		stat.setModTime(mtime)
 		stat.setSize(size)
 
-	def getProject(self):
-
-		return self.m_parent.getProject()
-
-	def getPackage(self):
-
-		return self.m_parent.getPackage()
-
 	def read(self, length, offset):
 
-		obs = self.m_parent.getObs()
+		obs = self.getRoot().getObs()
 
 		data = obs.getFileContent(
-			self.getProject(),
-			self.getPackage(),
+			self.getProject().getName(),
+			self.getPackage().getName(),
 			self.getName(),
 			revision = self.m_revision
 		)

@@ -167,6 +167,32 @@ class Node(object):
 		system."""
 		return self.m_parent == None
 
+	def getRoot(self):
+		"""Returns the root node of the file system."""
+		ret = self
+		while ret.m_parent:
+			ret = ret.m_parent
+		return ret
+
+	def _findParent(self, _type):
+		ret = self.m_parent
+		while ret:
+			if isinstance(ret, _type):
+				return ret
+			ret = ret.m_parent
+
+		raise Exception("No parent of type '{}' found".format(str(_type)))
+
+	def getPackage(self):
+		"""Returns the package node the current node belongs to."""
+		import oscfs.package
+		return self._findParent(oscfs.package.Package)
+
+	def getProject(self):
+		"""Returns the project node the current node belongs to."""
+		import oscfs.project
+		return self._findParent(oscfs.project.Project)
+
 class FileNode(Node):
 	"""Specialized Node type for read-only regular files. Implementations
 	of this type can set the current content of the file via setContent()

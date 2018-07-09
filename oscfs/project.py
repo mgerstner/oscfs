@@ -19,14 +19,6 @@ class Project(oscfs.types.DirNode):
 		self.m_api_name = ".oscfs"
 		super(Project, self).__init__(parent, name)
 
-	def getObs(self):
-
-		return self.m_parent.getObs()
-
-	def getProject(self):
-
-		return self.getName()
-
 	def _addApiDir(self):
 
 		api_name = self.m_api_name
@@ -42,7 +34,7 @@ class Project(oscfs.types.DirNode):
 
 		self.clearEntries()
 
-		obs = self.m_parent.getObs()
+		obs = self.getRoot().getObs()
 
 		project = self.getName()
 
@@ -53,7 +45,7 @@ class Project(oscfs.types.DirNode):
 
 			self.m_entries[package] = oscfs.package.Package(
 				self, package,
-				project = self.getProject(),
+				project = self.getName(),
 				package = package
 			)
 
@@ -108,9 +100,9 @@ class PrjApiDir(oscfs.types.DirNode):
 	def getPrjMeta(self):
 
 		if not self.m_prj_meta:
-			obs = self.m_parent.getObs()
+			obs = self.getRoot().getObs()
 			self.m_prj_meta = obs.getProjectMeta(
-				self.m_parent.getProject()
+				self.getProject().getName()
 			)
 
 		return self.m_prj_meta

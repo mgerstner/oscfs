@@ -23,26 +23,14 @@ class Package(oscfs.types.DirNode):
 		self.m_package = package
 		self.m_api_name = ".oscfs"
 
-	def getObs(self):
-
-		return self.m_parent.getObs()
-
-	def getProject(self):
-
-		return self.m_project
-
-	def getPackage(self):
-
-		return self.m_package
-
 	def getRevision(self):
 
 		return self.m_revision
 
 	def getCommitInfos(self):
-		obs = self.getObs()
+		obs = self.getRoot().getObs()
 		return obs.getCommitInfos(
-			self.getProject(),
+			self.getProject().getName(),
 			self.getName()
 		)
 
@@ -77,12 +65,12 @@ class Package(oscfs.types.DirNode):
 
 	def _addPackageFiles(self):
 
-		obs = self.m_parent.getObs()
+		obs = self.getRoot().getObs()
 
 		types = oscfs.types.FileType
 
 		for ft, name, size, mtime, target in obs.getPackageFileList(
-			self.getProject(), self.getPackage(),
+			self.getProject().getName(), self.m_package,
 			revision = self.m_revision
 		):
 			if ft == types.regular:
@@ -94,6 +82,7 @@ class Package(oscfs.types.DirNode):
 				node = oscfs.link.Link(self, name, target)
 			else:
 				raise Exception("Unexpected type")
+
 			self.m_entries[name] = node
 
 	def update(self):
@@ -147,10 +136,10 @@ class PkgApiDir(oscfs.types.DirNode):
 	def getPkgMeta(self):
 
 		if not self.m_pkg_meta:
-			obs = self.m_parent.getObs()
+			obs = self.getRoot().getObs()
 			self.m_pkg_meta = obs.getPackageMeta(
-				self.m_parent.getProject(),
-				self.m_parent.getName()
+				self.getProject().getName(),
+				self.getPackage().getName()
 			)
 
 		return self.m_pkg_meta
@@ -195,7 +184,7 @@ class PkgApiDir(oscfs.types.DirNode):
 			devel_link = "develproject"
 			target = "{}/{}".format(
 					devel_proj,
-					self.m_parent.getPackage()
+					self.getPackage().getName()
 			)
 			self.m_entries[devel_link] = \
 				oscfs.link.Link(self, devel_link, target)
@@ -238,10 +227,6 @@ class RevisionsDir(oscfs.types.DirNode):
 		super(RevisionsDir, self).__init__(parent, name)
 		self.m_package = package
 
-	def getObs(self):
-
-		return self.m_parent.m_parent.getObs()
-
 	def update(self):
 		if not self.isCacheStale():
 			return
@@ -254,8 +239,8 @@ class RevisionsDir(oscfs.types.DirNode):
 			name = str(info.getRevision())
 			self.m_entries[name] = Package(
 				self, name,
-				project = self.m_parent.m_parent.getProject(),
-				package = self.m_package.getPackage(),
+				project = self.getProject().getName(),
+				package = self.getPackage().getName(),
 				revision = info.getRevision()
 			)
 
@@ -277,10 +262,12 @@ class LogNode(oscfs.types.FileNode):
 
 	def fetchLog(self):
 
-		package = self.m_package
-		obs = package.getObs()
+		obs = self.getRoot().getObs()
 
-		log = obs.getCommitLog(package.getProject(), package.getName())
+		log = obs.getCommitLog(
+			self.getProject().getName(),
+			self.getPackage().getName()
+		)
 
 		return log
 
@@ -369,21 +356,17 @@ class RequestsDir(oscfs.types.DirNode):
 		super(RequestsDir, self).__init__(parent, name)
 		self.m_package = package
 
-	def getObs(self):
-
-		return self.m_parent.m_parent.getObs()
-
 	def update(self):
 		if not self.isCacheStale():
 			return
 
 		self.clearEntries()
 
-		obs = self.getObs()
+		obs = self.getRoot().getObs()
 
 		for req in obs.getPackageRequestList(
-				project = self.m_parent.m_parent.getProject(),
-				package = self.m_package.getPackage()
+				project = self.getProject().getName(),
+				package = self.getPackage().getName()
 		):
 			label = "{}:{}".format(req.reqid, req.state.name)
 			self.m_entries[label] = RequestNode(self, req, label)
