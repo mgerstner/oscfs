@@ -266,3 +266,11 @@ class DirNode(Node):
 		for entry in self.m_entries.values():
 			entry.setCacheStale()
 
+class PlainDirNode(DirNode):
+	"""Specialized DirNode that doesn't implement its own update logic.
+	This type of dir can be used to implement subdirs that shouldn't act
+	on their own."""
+
+	def update(self):
+		pass
+
