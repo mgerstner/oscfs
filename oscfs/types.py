@@ -106,7 +106,7 @@ class Node(object):
 	Also the Stat information is kept in this base class.
 	"""
 
-	max_cache_time = datetime.timedelta(minutes = 30)
+	max_cache_time = datetime.timedelta(minutes = 60)
 
 	def __init__(self, parent, name, _type = FileType.regular):
 
