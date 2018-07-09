@@ -403,6 +403,61 @@ class PackageInfo(InfoBase):
 		else:
 			self.reset()
 
+	def reset(self):
+
+		InfoBase.reset(self)
+		# contains tuples of (repo, arch) where arch can also be None
+		self.m_disabled_builds = []
+
+	def getDisabledBuilds(self):
+		return self.m_disabled_builds
+
+	def setDisabledBuilds(self, db):
+		self.m_disabled_builds = db
+
+	def addDisabledBuild(self, repo, arch):
+		self.m_disabled_builds.append((repo, arch))
+
+	def getAllActiveRepos(self, project_info):
+		"""Returns a list of all (repository, arch) tuples for which
+		the current package building is enabled. @project_info is
+		required to calculate this."""
+
+		ret = []
+
+		for repo in project_info.getRepos():
+
+			if not repo.getEnabled():
+				# the repository is already globally disabled
+				# in the project
+				continue
+			elif repo.getReleaseTarget():
+				# this is a special repository probably used
+				# for manual building e.g. "images" in
+				# openSUSE:Factory
+				continue
+
+			archs = repo.getArchs()
+
+			# remove any repo/arch combination locally disabled in
+			# the package
+			for name, arch in self.getDisabledBuilds():
+
+				if repo.getName() != name:
+					continue
+
+				if arch:
+					archs.remove(arch)
+				else:
+					# the complete repo is disabled for
+					# all archs
+					archs = []
+
+			for arch in archs:
+				ret.append( (repo.getName(), arch) )
+
+		return ret
+
 	def parse(self, meta_xml):
 		"""Parses a package meta XML string and fills the object's
 		values from it."""
@@ -416,6 +471,15 @@ class PackageInfo(InfoBase):
 		for el in tree:
 			if self.parseXmlElement(el):
 				continue
+			elif el.tag == "build":
+				self.parseBuild(el)
+
+	def parseBuild(self, el):
+		for child in el:
+			if child.tag == "disable":
+				repo = child.attrib["repository"]
+				arch = child.attrib.get("arch", None)
+				self.addDisabledBuild(repo,arch)
 
 class Repository(object):
 	"""Collective meta information about a repository in a
