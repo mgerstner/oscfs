@@ -213,6 +213,9 @@ class RepositoriesNode(oscfs.types.FileNode):
 				", ".join(repo.getArchs())
 			)
 
+			if not repo.getEnabled():
+				content += "disabled\n"
+
 			rt = repo.getReleaseTarget()
 
 			if rt:
