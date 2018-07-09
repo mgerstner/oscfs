@@ -423,6 +423,7 @@ class Repository(object):
 		self.m_repo = ""
 		self.m_archs = []
 		self.m_release_target = None
+		self.m_enabled = True
 
 	def parse(self, xml_node):
 		self.reset()
@@ -476,6 +477,12 @@ class Repository(object):
 	def setReleaseTarget(self, project, repo):
 		self.m_release_target = (project, repo)
 
+	def getEnabled(self):
+		return self.m_enabled
+
+	def setEnabled(self, on_off):
+		self.m_enabled = on_off
+
 class ProjectInfo(InfoBase):
 	"""Collective meta information about a project."""
 
@@ -488,6 +495,7 @@ class ProjectInfo(InfoBase):
 	def reset(self):
 		InfoBase.reset(self)
 		self.m_repos = []
+		self.m_disabled_repos = []
 		self.m_debuginfo = None
 		self.m_locked = False
 
@@ -509,10 +517,27 @@ class ProjectInfo(InfoBase):
 			elif el.tag == "repository":
 				repo = Repository(el)
 				self.addRepo(repo)
+			elif el.tag == "build":
+				self.parseBuild(el)
 			elif el.tag == "lock":
 				for child in el:
 					if child.tag == "enable":
 						self.setLocked(True)
+
+		self.postParse()
+
+	def postParse(self):
+
+		for repo in self.m_repos:
+
+			if repo.getName() in self.m_disabled_repos:
+				repo.setEnabled(False)
+
+	def parseBuild(self, el):
+		for child in el:
+			if child.tag == "disable":
+				repo = child.attrib["repository"]
+				self.m_disabled_repos.append(repo)
 
 	def getDebuginfoEnabled(self):
 		return self.m_debuginfo
