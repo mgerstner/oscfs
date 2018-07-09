@@ -16,6 +16,7 @@ class Project(oscfs.types.DirNode):
 
 	def __init__(self, parent, name):
 
+		self.m_api_name = ".oscfs"
 		super(Project, self).__init__(parent, name)
 
 	def getObs(self):
@@ -28,8 +29,11 @@ class Project(oscfs.types.DirNode):
 
 	def _addApiDir(self):
 
-		api_name = ".oscfs"
+		api_name = self.m_api_name
 		self.m_entries[api_name] = PrjApiDir(self, api_name)
+
+	def getApiDir(self):
+		return self.m_entries[self.m_api_name]
 
 	def update(self):
 
