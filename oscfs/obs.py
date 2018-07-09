@@ -313,12 +313,19 @@ class InfoBase(object):
 		self.m_bugowners = []
 		self.m_readers = []
 		self.m_devel_project = ""
+		self.m_name = ""
 
 	def setTitle(self, title):
 		self.m_title = title if title != None else ""
 
 	def getTitle(self):
 		return self.m_title
+
+	def getName(self):
+		return self.m_name
+
+	def setName(self, name):
+		self.m_name = name
 
 	def setDesc(self, desc):
 		self.m_desc = desc if desc != None else ""
@@ -402,6 +409,9 @@ class PackageInfo(InfoBase):
 
 		self.reset()
 		tree = et.fromstring(meta_xml)
+
+		name = tree.attrib["name"]
+		self.setName(name)
 
 		for el in tree:
 			if self.parseXmlElement(el):
@@ -505,6 +515,9 @@ class ProjectInfo(InfoBase):
 
 		self.reset()
 		tree = et.fromstring(meta_xml)
+
+		name = tree.attrib["name"]
+		self.setName(name)
 
 		for el in tree:
 			if self.parseXmlElement(el):
