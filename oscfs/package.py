@@ -39,6 +39,9 @@ class Package(oscfs.types.DirNode):
 		api_name = self.m_api_name
 		self.m_entries[api_name] = PkgApiDir(self, api_name)
 
+	def getApiDir(self):
+		return self.m_entries[self.m_api_name]
+
 	def _canKeepCache(self):
 
 		if not self.wasEverUpdated():
@@ -121,6 +124,7 @@ class PkgApiDir(oscfs.types.DirNode):
 		self.m_rev_dir_name = "revisions"
 		self.m_req_dir_name = "requests"
 		self.m_refresh_trigger = "refresh"
+		self.m_buildlogs_name = "buildlogs"
 		self.m_commit_infos = None
 		self.m_pkg_meta = None
 
@@ -171,7 +175,8 @@ class PkgApiDir(oscfs.types.DirNode):
 			(self.m_maintainers_name, MaintainersNode),
 			(self.m_bugowners_name, BugownersNode),
 			(self.m_refresh_trigger,
-				oscfs.refreshtrigger.RefreshTrigger)
+				oscfs.refreshtrigger.RefreshTrigger),
+			(self.m_buildlogs_name, BuildlogsDir)
 		):
 			try:
 				node = _type(self, self.m_parent, name)
@@ -437,4 +442,61 @@ class BugownersNode(oscfs.types.FileNode):
 		pkg_info = self.m_parent.getPkgInfo()
 		bugowners = '\n'.join(pkg_info.getBugowners())
 		self.setContent(bugowners)
+
+class BuildlogNode(oscfs.types.FileNode):
+	"""This type returns a certain build log for a certain package upon
+	read."""
+
+	def __init__(self, parent, project, package, repo, arch):
+
+		super(BuildlogNode, self).__init__(parent, arch)
+		self.m_project = project
+		self.m_package = package
+		self.m_repo = repo
+		self.m_arch = arch
+
+	def fetchContent(self):
+		obs = self.getRoot().getObs()
+		log = obs.getBuildlog(
+			self.m_project, self.m_package,
+			self.m_repo, self.m_arch
+		)
+		self.setContent(log)
+
+class BuildlogsDir(oscfs.types.DirNode):
+	"""This type provides access to a repository/arch hierarchy that allow
+	access to the current build logs of a package."""
+
+	def __init__(self, parent, package, name):
+
+		super(BuildlogsDir, self).__init__(parent, name)
+		self.m_package = package
+
+	def update(self):
+
+		if not self.isCacheStale():
+			return
+
+		self.clearEntries()
+
+		pkg_info = self.getPackage().getApiDir().getPkgInfo()
+		prj_info = self.getProject().getApiDir().getPrjInfo()
+
+		active = pkg_info.getAllActiveRepos(prj_info)
+
+		for repo, arch in active:
+			repodir = self.m_entries.setdefault(
+				repo,
+				oscfs.types.PlainDirNode(self, repo)
+			)
+
+			repodir.m_entries[arch] = BuildlogNode(
+				repodir,
+				prj_info.getName(),
+				pkg_info.getName(),
+				repo,
+				arch
+			)
+
+		self.setCacheFresh()
 
