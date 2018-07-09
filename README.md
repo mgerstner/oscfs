@@ -127,6 +127,30 @@ directory:
   number. Each directory contains the state of the package's files as of that
   revision.
 
+## Performance Hints
+
+### Sorting of Directory Contents
+
+Listing directories with `ls` can feel a bit on the slow side, even if data is
+cached by `oscfs`. This results from `ls` sorting the directory contents by
+name. Since e.g. `openSUSE:Factory` contains more than 10.000 entries this can
+take about a second to complete. When listing without sorting i.e. by running
+`ls -f` then the time required is considerably lower. Similar considerations
+need to be made when accessing the file system by other means like from
+programming languages that could sort directory contents by default.
+
+### Metadata of Pseudo Files
+
+The pseudo files contained in the `.oscfs` directory of a package start out
+with a size of zero bytes, although they may actually contain data. The reason
+for this is that for determining the size of the content, the content would
+need to be accessed right away. This would slow down e.g. recursive searching
+for file names considerably. Therefore some metadata like the size of pseudo
+files is only calculated after it is accessed the first time. Since some of
+the pseudo files may return dynamic data the display file size is also subject
+to change at any time i.e. it only reflects a snapshot of the data as it was
+last seen by `oscfs`.
+
 ## Usage Examples
 
 ### Finding Packages
