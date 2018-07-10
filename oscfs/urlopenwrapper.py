@@ -47,8 +47,6 @@ class UrlopenWrapper(object):
 		api_conf = osc.conf.config["api_host_options"].get(api_key, None)
 
 		# add user/password, but only if it's an encrypted connection
-		# TODO: XXX: make sure https certificate is correctly
-		# validated
 		if proto == "https" and api_conf:
 			userpw = "{}:{}".format(
 				api_conf["user"], api_conf["pass"]
