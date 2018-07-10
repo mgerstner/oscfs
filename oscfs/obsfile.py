@@ -23,7 +23,7 @@ class ObsFile(oscfs.types.Node):
 
 		obs = self.getRoot().getObs()
 
-		data = obs.getFileContent(
+		data = obs.getSourceFileContent(
 			self.getProject().getName(),
 			self.getPackage().getName(),
 			self.getName(),

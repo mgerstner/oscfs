@@ -144,7 +144,7 @@ class Obs(object):
 			withfullhistory = True
 		)
 
-	def getFileContent(self, project, package, _file, revision = None):
+	def getSourceFileContent(self, project, package, _file, revision = None):
 
 		# 'cat' is surprisingly difficult ... approach taken by the
 		# 'osc cat' command line logic.
@@ -157,9 +157,20 @@ class Obs(object):
 		if revision:
 			query["rev"] = revision
 
+		return self._download(
+			['source', project, package, _file],
+			query
+		)
+
+	def getBinaryFileContent(self, project, package, repo, arch, _file):
+		comps = ['build', project, repo, arch, package, _file]
+		return self._download(comps)
+
+	def _download(self, urlcomps, query = dict()):
+
 		url = osc.core.makeurl(
 			self.m_apiurl,
-			['source', project, package, _file],
+			urlcomps,
 			query = query
 		)
 
@@ -288,6 +299,19 @@ class Obs(object):
 		xml = self.getBuildResultsMeta(*args, **kwargs)
 
 		return BuildResultList(xml)
+
+	def getBinaryList(self, project, package, repo, arch):
+		"""Returns a list of tuples representing the binary
+		artifacts of the given build configuration. Each tuple
+		consists of (filename, mtime, size)."""
+
+		# when passing Verbose we get File object with metadata back
+		ret = osc.core.get_binarylist(
+			self.m_apiurl, project, repo, arch, package,
+			verbose = True
+		)
+
+		return [ (f.name, f.mtime, f.size) for f in ret ]
 
 class CommitInfo(object):
 
