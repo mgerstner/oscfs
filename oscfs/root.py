@@ -40,7 +40,7 @@ class Root(oscfs.types.DirNode):
 
 		for part in parts:
 
-			node.update()
+			node.updateIfNeeded()
 			entries = node.getEntries()
 
 			node = entries[part]
@@ -48,10 +48,6 @@ class Root(oscfs.types.DirNode):
 		return node
 
 	def update(self):
-
-		if not self.isCacheStale():
-			return
-
 		for project in self.m_obs.getProjectList():
 
 			if project in self.m_entries:

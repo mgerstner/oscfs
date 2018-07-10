@@ -22,6 +22,9 @@ class Package(oscfs.types.DirNode):
 		self.m_project = project
 		self.m_package = package
 		self.m_api_name = ".oscfs"
+		# we have special update logic and only want to clear
+		# explicitly
+		self._setAutoClearOnUpdate(False)
 
 	def getRevision(self):
 
@@ -41,16 +44,6 @@ class Package(oscfs.types.DirNode):
 
 	def getApiDir(self):
 		return self.m_entries[self.m_api_name]
-
-	def _canKeepCache(self):
-
-		if not self.wasEverUpdated():
-			return False
-
-		if self.m_revision is not None:
-			# if we are fixed to a certain revision then there is
-			# no need to update anything
-			return True
 
 	def _existsNewRevision(self):
 
@@ -88,13 +81,19 @@ class Package(oscfs.types.DirNode):
 
 			self.m_entries[name] = node
 
+	def isCacheStale(self):
+
+		if not super(Package, self).isCacheStale():
+			return False
+
+		if not self.wasEverUpdated():
+			return True
+
+		# if we are fixed to a certain revision then there is no need
+		# to update anything
+		return self.m_revision is None
+
 	def update(self):
-
-		if not self.isCacheStale():
-			return
-		elif self._canKeepCache():
-			return
-
 		if self._existsNewRevision():
 			self.clearEntries()
 			self._addPackageFiles()
@@ -103,8 +102,6 @@ class Package(oscfs.types.DirNode):
 			# only add the API dir for the current version of the
 			# package, the pkg meta data is not versioned.
 			self._addApiDir()
-
-		self.setCacheFresh()
 
 class PkgApiDir(oscfs.types.DirNode):
 	"""This type provides access to additional meta data for a package.
@@ -158,12 +155,8 @@ class PkgApiDir(oscfs.types.DirNode):
 		return self.m_entries[self.m_num_revs_name]
 
 	def update(self):
-		if not self.isCacheStale():
-			return
-
 		self.m_commit_infos = None
 		self.m_pkg_meta = None
-		self.clearEntries()
 
 		for name, _type in (
 			(self.m_log_name, LogNode),
@@ -196,8 +189,6 @@ class PkgApiDir(oscfs.types.DirNode):
 			self.m_entries[devel_link] = \
 				oscfs.link.Link(self, devel_link, target)
 
-		self.setCacheFresh()
-
 class CommitsDir(oscfs.types.DirNode):
 	"""This types provides access to each individual commit for a
 	package. Each commit is represented as an individual file."""
@@ -208,11 +199,6 @@ class CommitsDir(oscfs.types.DirNode):
 		self.m_package = package
 
 	def update(self):
-		if not self.isCacheStale():
-			return
-
-		self.clearEntries()
-
 		package = self.m_package
 		infos = self.m_parent.getCachedCommitInfos()
 
@@ -221,8 +207,6 @@ class CommitsDir(oscfs.types.DirNode):
 
 			commit = "{}".format(rev+1)
 			self.m_entries[commit] = CommitNode(self, info, commit)
-
-		self.setCacheFresh()
 
 class RevisionsDir(oscfs.types.DirNode):
 	"""This type provides access to all revisions that exist for a
@@ -235,11 +219,6 @@ class RevisionsDir(oscfs.types.DirNode):
 		self.m_package = package
 
 	def update(self):
-		if not self.isCacheStale():
-			return
-
-		self.clearEntries()
-
 		package = self.m_package
 
 		for info in self.m_parent.getCachedCommitInfos():
@@ -250,9 +229,6 @@ class RevisionsDir(oscfs.types.DirNode):
 				package = self.getPackage().getName(),
 				revision = info.getRevision()
 			)
-
-		self.setCacheFresh()
-
 
 class LogNode(oscfs.types.FileNode):
 	"""This node type contains the commit log for the package it resides
@@ -364,11 +340,6 @@ class RequestsDir(oscfs.types.DirNode):
 		self.m_package = package
 
 	def update(self):
-		if not self.isCacheStale():
-			return
-
-		self.clearEntries()
-
 		obs = self.getRoot().getObs()
 
 		for req in obs.getPackageRequestList(
@@ -377,8 +348,6 @@ class RequestsDir(oscfs.types.DirNode):
 		):
 			label = "{}:{}".format(req.reqid, req.state.name)
 			self.m_entries[label] = RequestNode(self, req, label)
-
-		self.setCacheFresh()
 
 class MetaNode(oscfs.types.FileNode):
 	"""This node type contains the raw XML metadata of a package."""
@@ -516,12 +485,6 @@ class BuildlogsDir(oscfs.types.DirNode):
 		self.m_package = package
 
 	def update(self):
-
-		if not self.isCacheStale():
-			return
-
-		self.clearEntries()
-
 		pkg_info = self.getPackage().getApiDir().getPkgInfo()
 		prj_info = self.getProject().getApiDir().getPrjInfo()
 
@@ -540,6 +503,4 @@ class BuildlogsDir(oscfs.types.DirNode):
 				repo,
 				arch
 			)
-
-		self.setCacheFresh()
 

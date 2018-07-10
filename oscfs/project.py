@@ -28,12 +28,6 @@ class Project(oscfs.types.DirNode):
 		return self.m_entries[self.m_api_name]
 
 	def update(self):
-
-		if not self.isCacheStale():
-			return
-
-		self.clearEntries()
-
 		obs = self.getRoot().getObs()
 
 		project = self.getName()
@@ -50,8 +44,6 @@ class Project(oscfs.types.DirNode):
 			)
 
 		self._addApiDir()
-
-		self.setCacheFresh()
 
 class PrjApiDir(oscfs.types.DirNode):
 	"""This type provides access to additional meta data for a project.
@@ -72,12 +64,6 @@ class PrjApiDir(oscfs.types.DirNode):
 		self.m_prj_meta = None
 
 	def update(self):
-
-		if not self.isCacheStale():
-			return
-
-		self.clearEntries()
-
 		for name, _type in (
 			(self.m_meta_name, MetaNode),
 			(self.m_maintainers_name, MaintainersNode),
@@ -94,8 +80,6 @@ class PrjApiDir(oscfs.types.DirNode):
 				self.m_entries[name] = node
 			except Exception as e:
 				print("Failed to add", name, "entry:", e)
-
-		self.setCacheFresh()
 
 	def getPrjMeta(self):
 

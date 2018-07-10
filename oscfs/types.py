@@ -115,6 +115,7 @@ class Node(object):
 		self.m_parent = parent
 		self.setType(_type)
 		self.m_last_updated = None
+		self.m_auto_clear_on_update = True
 
 	@classmethod
 	def setMaxCacheTime(cls, seconds):
@@ -148,6 +149,12 @@ class Node(object):
 	def setType(self, _type):
 		self.m_type = _type
 		self.m_stat.setFileType(_type)
+
+	def _setAutoClearOnUpdate(self, on_off):
+		self.m_auto_clear_on_update = on_off
+
+	def doAutoClearOnUpdate(self):
+		return self.m_auto_clear_on_update
 
 	def calcDepth(self):
 		"""Returns the nesting depth of the Node i.e. the number of
@@ -192,6 +199,14 @@ class Node(object):
 		"""Returns the project node the current node belongs to."""
 		import oscfs.project
 		return self._findParent(oscfs.project.Project)
+
+	def updateIfNeeded(self):
+		"""Calls the update method if it is necessary."""
+		if self.isCacheStale():
+			if self.doAutoClearOnUpdate():
+				self.clearEntries()
+			self.update()
+			self.setCacheFresh()
 
 class FileNode(Node):
 	"""Specialized Node type for read-only regular files. Implementations
@@ -275,7 +290,7 @@ class DirNode(Node):
 
 	def getNames(self):
 
-		self.update()
+		self.updateIfNeeded()
 
 		dots = [".", ".."]
 		entries = self.m_entries.keys()
@@ -301,6 +316,11 @@ class PlainDirNode(DirNode):
 	"""Specialized DirNode that doesn't implement its own update logic.
 	This type of dir can be used to implement subdirs that shouldn't act
 	on their own."""
+
+	def __init__(self, *args, **kwargs):
+
+		super(PlainDirNode, self).__init__(*args, **kwargs)
+		self._setAutoClearOnUpdate(False)
 
 	def update(self):
 		pass
