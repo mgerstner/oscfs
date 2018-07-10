@@ -408,6 +408,10 @@ class PackageInfo(InfoBase):
 		InfoBase.reset(self)
 		# contains tuples of (repo, arch) where arch can also be None
 		self.m_disabled_builds = []
+		# same here for explicitly enabled builds in case of
+		# m_all_disabled == True
+		self.m_enabled_builds = []
+		self.m_all_disabled = False
 
 	def getDisabledBuilds(self):
 		return self.m_disabled_builds
@@ -418,6 +422,21 @@ class PackageInfo(InfoBase):
 	def addDisabledBuild(self, repo, arch):
 		self.m_disabled_builds.append((repo, arch))
 
+	def setAllDisabled(self, on_off):
+		self.m_all_disabled = on_off
+
+	def getAllDisabled(self):
+		return self.m_all_disabled
+
+	def getEnabledBuilds(self):
+		return self.m_enabled_builds
+
+	def setEnabledBuilds(self, eb):
+		self.m_enabled_builds = eb
+
+	def addEnabledBuild(self, repo, arch):
+		self.m_enabled_builds.append((repo, arch))
+
 	def getAllActiveRepos(self, project_info):
 		"""Returns a list of all (repository, arch) tuples for which
 		the current package building is enabled. @project_info is
@@ -427,20 +446,34 @@ class PackageInfo(InfoBase):
 
 		for repo in project_info.getRepos():
 
-			if not repo.getEnabled():
-				# the repository is already globally disabled
-				# in the project
-				continue
-			elif repo.getReleaseTarget():
+			if repo.getReleaseTarget():
 				# this is a special repository probably used
 				# for manual building e.g. "images" in
 				# openSUSE:Factory
 				continue
 
-			archs = repo.getArchs()
+			if self.getAllDisabled() or not repo.getEnabled():
+				# either by default all repos are off of this
+				# specific repo is off
+				archs = []
+			else:
+				archs = repo.getArchs()
 
-			# remove any repo/arch combination locally disabled in
-			# the package
+			# add explicitly enabled builds
+			for name, arch in self.getEnabledBuilds():
+
+				if repo.getName() != name:
+					continue
+
+				if arch:
+					archs.add(arch)
+				else:
+					# the complete repo is enabled for all
+					# archs
+					archs = repo.getArchs()
+
+			# remove any repo/arch combination locally
+			# disabled in the package
 			for name, arch in self.getDisabledBuilds():
 
 				if repo.getName() != name:
@@ -477,9 +510,18 @@ class PackageInfo(InfoBase):
 	def parseBuild(self, el):
 		for child in el:
 			if child.tag == "disable":
-				repo = child.attrib["repository"]
+				repo = child.attrib.get("repository", None)
 				arch = child.attrib.get("arch", None)
-				self.addDisabledBuild(repo,arch)
+				if repo or arch:
+					self.addDisabledBuild(repo,arch)
+				else:
+					# this is "<disable/>"
+					self.setAllDisabled(True)
+
+			elif child.tag == "enable":
+				repo = child.attrib.get("repository", None)
+				arch = child.attrib.get("arch", None)
+				self.addEnabledBuild(repo, arch)
 
 class Repository(object):
 	"""Collective meta information about a repository in a
