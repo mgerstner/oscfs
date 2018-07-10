@@ -125,6 +125,7 @@ class PkgApiDir(oscfs.types.DirNode):
 		self.m_req_dir_name = "requests"
 		self.m_refresh_trigger = "refresh"
 		self.m_buildlogs_name = "buildlogs"
+		self.m_buildresults_name = "buildresults"
 		self.m_commit_infos = None
 		self.m_pkg_meta = None
 
@@ -176,7 +177,8 @@ class PkgApiDir(oscfs.types.DirNode):
 			(self.m_bugowners_name, BugownersNode),
 			(self.m_refresh_trigger,
 				oscfs.refreshtrigger.RefreshTrigger),
-			(self.m_buildlogs_name, BuildlogsDir)
+			(self.m_buildlogs_name, BuildlogsDir),
+			(self.m_buildresults_name, BuildresultsNode)
 		):
 			try:
 				node = _type(self, self.m_parent, name)
@@ -442,6 +444,27 @@ class BugownersNode(oscfs.types.FileNode):
 		pkg_info = self.m_parent.getPkgInfo()
 		bugowners = '\n'.join(pkg_info.getBugowners())
 		self.setContent(bugowners)
+
+class BuildresultsNode(oscfs.types.FileNode):
+	"""This node returns a the current build results for configured
+	repositories."""
+
+	def __init__(self, parent, package, name):
+
+		super(BuildresultsNode, self).__init__(parent, name)
+		self.m_package = package
+		# always fetch fresh build results without caching
+		self.setUseCache(False)
+
+	def fetchContent(self):
+		obs = self.getRoot().getObs()
+		results = obs.getBuildResults(
+			self.getProject().getName(),
+			self.getPackage().getName()
+		)
+
+		content = results.getTable()
+		self.setContent(content)
 
 class BuildlogNode(oscfs.types.FileNode):
 	"""This type returns a certain build log for a certain package upon
