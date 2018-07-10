@@ -26,6 +26,8 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 		# stores file handle -> node mappings
 		# (file handles need to be integers)
 		self.m_handles = [None] * 1024
+		# unallocated file handles
+		self.m_free_handles = range(1024)
 		self._setupParser()
 
 	def _setupParser(self):
@@ -124,19 +126,22 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 
 	def _allocFileHandle(self, node):
 
-		# TODO: this is inefficient and we should keep a kind of free
-		# list for constant time handle allocation
-		for i in range(len(self.m_handles)):
+		if not self.m_free_handles:
+			raise fuse.FuseOSError(errno.EMFILE)
 
-			if self.m_handles[i] == None:
-				self.m_handles[i] = node
-				return i
+		fd = self.m_free_handles.pop(0)
 
-		raise fuse.FuseOSError(errno.EMFILE)
+		if self.m_handles[fd] != None:
+			raise Exception("Handle allocation inconsistency")
+
+		self.m_handles[fd] = node
+
+		return fd
 
 	def _freeFileHandle(self, fh):
 
 		self.m_handles[fh] = None
+		self.m_free_handles.append(fh)
 
 	def _getFileHandle(self, fh):
 
