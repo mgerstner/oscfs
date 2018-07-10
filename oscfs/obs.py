@@ -476,10 +476,10 @@ class PackageInfo(InfoBase):
 
 		for repo in project_info.getRepos():
 
-			if repo.getReleaseTarget():
-				# this is a special repository probably used
-				# for manual building e.g. "images" in
-				# openSUSE:Factory
+			rt = repo.getReleaseTarget()
+			if rt and rt[2]:
+				# this is a manually triggered repository
+				# e.g. "images" in openSUSE:Factory
 				continue
 
 			if self.getAllDisabled() \
@@ -593,7 +593,9 @@ class Repository(object):
 				attrs = child.attrib
 				project = attrs["project"]
 				repo = attrs["repository"]
-				self.setReleaseTarget(project, repo)
+				trigger = attrs.get("trigger", "")
+				manual = trigger == "manual"
+				self.setReleaseTarget(project, repo, manual)
 
 	def getName(self):
 		return self.m_name
@@ -622,8 +624,8 @@ class Repository(object):
 	def getReleaseTarget(self):
 		return self.m_release_target
 
-	def setReleaseTarget(self, project, repo):
-		self.m_release_target = (project, repo)
+	def setReleaseTarget(self, project, repo, manual):
+		self.m_release_target = (project, repo, manual)
 
 	def getEnabled(self):
 		return self.m_enabled

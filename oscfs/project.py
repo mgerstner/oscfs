@@ -199,9 +199,14 @@ class RepositoriesNode(oscfs.types.FileNode):
 			rt = repo.getReleaseTarget()
 
 			if rt:
-				content += "release target: {}/{}\n".format(
+				content += "release target: {}/{}".format(
 					rt[0], rt[1]
 				)
+
+				if rt[2]:
+					content += " [manual]"
+
+				content += "\n"
 
 		self.setContent(content)
 
