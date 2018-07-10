@@ -263,6 +263,32 @@ class Obs(object):
 
 		return ret
 
+	def getBuildResultsMeta(self, project, package, repo = [], arch = []):
+		"""Returns XML data describing the build status of the given
+		project/package combination. If repo and arch are given then
+		only the status of the given build configuration is returned,
+		otherwise all available information is collected."""
+
+		if not isinstance(repo, list):
+			repo = [repo]
+		if not isinstance(arch, list):
+			arch = [arch]
+
+		xml_lines = osc.core.show_results_meta(
+			self.m_apiurl, project, package,
+			repository = repo, arch = arch
+		)
+
+		return '\n'.join(xml_lines)
+
+	def getBuildResults(self, *args, **kwargs):
+		"""Like getBuildResultsMeta() but returns a list of
+		BuildResult objects."""
+
+		xml = self.getBuildResultsMeta(*args, **kwargs)
+
+		return BuildResultList(xml)
+
 class CommitInfo(object):
 
 	def __init__(self, revision):
@@ -456,7 +482,9 @@ class PackageInfo(InfoBase):
 				# openSUSE:Factory
 				continue
 
-			if self.getAllDisabled() or not repo.getEnabled():
+			if self.getAllDisabled() \
+				or not repo.getEnabled() \
+				or project_info.getAllDisabled():
 				# either by default all repos are off of this
 				# specific repo is off
 				archs = []
@@ -618,6 +646,7 @@ class ProjectInfo(InfoBase):
 		self.m_disabled_repos = []
 		self.m_debuginfo = None
 		self.m_locked = False
+		self.m_all_disabled = False
 
 	def parse(self, meta_xml):
 		"""Parses a project meta XML string and fills the object's
@@ -659,8 +688,20 @@ class ProjectInfo(InfoBase):
 	def parseBuild(self, el):
 		for child in el:
 			if child.tag == "disable":
-				repo = child.attrib["repository"]
-				self.m_disabled_repos.append(repo)
+				attrib = child.attrib
+				repo = attrib.get("repository", None)
+				arch = attrib.get("arch", None)
+
+				if repo or arch:
+					self.m_disabled_repos.append(repo)
+				else:
+					self.setAllDisabled(True)
+
+	def getAllDisabled(self):
+		return self.m_all_disabled
+
+	def setAllDisabled(self, on_off):
+		self.m_all_disabled = on_off
 
 	def getDebuginfoEnabled(self):
 		return self.m_debuginfo
@@ -679,3 +720,151 @@ class ProjectInfo(InfoBase):
 
 	def setLocked(self, locked):
 		self.m_locked = locked
+
+class BuildResultList(object):
+
+	def __init__(self, xml = None):
+
+		if xml:
+			self.parse(xml)
+		else:
+			self.reset()
+
+	def reset(self):
+
+		# checksum identifying the status of the package
+		self.m_checksum = ""
+		self.m_results = []
+
+	def parse(self, xml):
+
+		self.reset()
+
+		# this is a list of
+		#    <result project="" ...><status .../></result>
+		# elements
+
+		tree = et.fromstring(xml)
+
+		if tree.tag != "resultlist":
+			raise Exception(
+				"Getting build results failed:\n{}".format(xml)
+			)
+
+		self.m_checksum = tree.attrib.get("state", "")
+
+		for el in tree:
+			self.m_results.append( BuildResult(el) )
+
+	def getResults(self):
+		return self.m_results
+
+	def getNumResults(self):
+		return len(self.m_results)
+
+	def getChecksum(self):
+		return self.m_checksum
+
+	def getTable(self):
+		"""Returns a formatted, aligned ASCII table describing the
+		build results."""
+		rows = []
+		num_cols = 3
+
+		for res in self.m_results:
+			pkgs = res.getPackages()
+			row = [
+				res.getRepository(),
+				res.getArch()
+			]
+			if len(pkgs) > 1:
+				print("Warning: build result for more than one package")
+				# use project code
+				row.append(res.getCode())
+			else:
+				row.append(pkgs[0][1])
+			rows.append(row)
+
+		max_cols = []
+
+		for i in range(num_cols):
+			maxlen = max( [ len(row[i]) for row in rows ] )
+			max_cols.append(maxlen + 1)
+
+		ret = ""
+
+		for row in rows:
+			for i in range(num_cols):
+				ret += row[i].ljust(max_cols[i]) + " "
+			ret += "\n"
+
+		return ret
+
+
+class BuildResult(object):
+
+	def __init__(self, xml_node = None):
+		if xml_node:
+			self.parse(xml_node)
+		else:
+			self.reset()
+
+	def reset(self):
+		self.m_project = ""
+		self.m_repository = ""
+		self.m_arch = ""
+		# these is the overall project code/state
+		self.m_code = ""
+		self.m_state = ""
+		self.m_packages = []
+
+	def getProject(self):
+		return self.m_project
+
+	def getRepository(self):
+		return self.m_repository
+
+	def getArch(self):
+		return self.m_arch
+
+	def getCode(self):
+		return self.m_code
+
+	def getState(self):
+		return self.m_state
+
+	def getPackages(self):
+		"""Returns a list of packages consisting of tuples of
+		(package, code) strings."""
+		return self.m_packages
+
+	def parse(self, xml_node):
+		"""Parses a buildresult meta XML string and fills the object's
+		values from it."""
+
+		self.reset()
+
+		if xml_node.tag != "result":
+			raise Exception("Not a build result node")
+
+		attrs = xml_node.attrib
+
+		self.m_project = attrs.get("project", "")
+		self.m_repository = attrs.get("repository", "")
+		self.m_arch = attrs.get("arch", "")
+		self.m_code = attrs.get("code", "")
+		self.m_state = attrs.get("state", "")
+
+		for status in xml_node:
+			if status.tag != "status":
+				continue
+
+			pkgattrs = status.attrib
+			pkg = pkgattrs.get("package", "")
+			code = pkgattrs.get("code", "")
+
+			if not pkg or not code:
+				continue
+
+			self.m_packages.append((pkg, code))
+
