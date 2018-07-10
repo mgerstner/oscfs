@@ -57,7 +57,7 @@ class Obs(object):
 		return ProjectInfo(xml)
 
 	def getPackageList(self, project):
-		"""Returns a list of all the packages withing a top-level
+		"""Returns a list of all the packages within a top-level
 		project. It's a list of plain strings."""
 
 		ret = osc.core.meta_get_packagelist(self.m_apiurl, project)
@@ -241,6 +241,10 @@ class Obs(object):
 		return PackageInfo(xml)
 
 	def getBuildlog(self, project, package, repo, arch):
+		"""Returns the plaintext build log for the given build
+		configuration. This can be empty if the build is not
+		configured at all or currently in wait state. It can also be
+		partial if building is currently in progress."""
 
 		url = '/'.join( [
 			self.m_apiurl,
