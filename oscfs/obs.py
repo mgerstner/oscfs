@@ -442,6 +442,7 @@ class PackageInfo(InfoBase):
 		# m_all_disabled == True
 		self.m_enabled_builds = []
 		self.m_all_disabled = False
+		self.m_release_name = ""
 
 	def getDisabledBuilds(self):
 		return self.m_disabled_builds
@@ -466,6 +467,46 @@ class PackageInfo(InfoBase):
 
 	def addEnabledBuild(self, repo, arch):
 		self.m_enabled_builds.append((repo, arch))
+
+	def setReleaseName(self, rn):
+		self.m_release_name = rn
+
+	def getReleaseName(self):
+		return self.m_release_name
+
+	def getMaintenanceIncident(self, project_info):
+		# I don't whether there's some more programmatic way to
+		# determine where the package was built.
+		#
+		# so the releasename from the package meta is the basename of
+		# the package. The package name is <package>.<incident-number>
+
+		if not self.m_release_name:
+			return None
+		elif len(self.getName()) <= len(self.m_release_name):
+			return None
+
+		parts = self.getName().split('.')
+		incident = parts[-1]
+		base = '.'.join(parts[:-1])
+
+		if base != self.m_release_name:
+			return None
+
+		try:
+			incident = int(incident)
+		except ValueError:
+			# not an incident number after all?
+			return None
+
+		parts = project_info.getName().split(':')
+		if parts[-1] != "Update":
+			# we need to be in an update project of some kind
+			return None
+
+		prefix = parts[0]
+
+		return "{}:Maintenance:{}".format(prefix, incident)
 
 	def getAllActiveRepos(self, project_info):
 		"""Returns a list of all (repository, arch) tuples for which
@@ -538,6 +579,8 @@ class PackageInfo(InfoBase):
 				continue
 			elif el.tag == "build":
 				self.parseBuild(el)
+			elif el.tag == "releasename":
+				self.setReleaseName(el.text)
 
 	def parseBuild(self, el):
 		for child in el:

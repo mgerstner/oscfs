@@ -189,6 +189,17 @@ class PkgApiDir(oscfs.types.DirNode):
 			self.m_entries[devel_link] = \
 				oscfs.link.Link(self, devel_link, target)
 
+		prj_info = self.getProject().getApiDir().getPrjInfo()
+		incident = self.getPkgInfo().getMaintenanceIncident(prj_info)
+
+		if incident:
+			# add a symlink to the maintenance indicent where this
+			# package was built
+			incident_link = "incident"
+			target = incident
+			self.m_entries[incident_link] = \
+				oscfs.link.Link(self, incident_link, target)
+
 class CommitsDir(oscfs.types.DirNode):
 	"""This types provides access to each individual commit for a
 	package. Each commit is represented as an individual file."""
