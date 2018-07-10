@@ -204,6 +204,7 @@ class FileNode(Node):
 
 		super(FileNode, self).__init__(parent, name)
 		self.m_content = None
+		self.m_use_cache = True
 
 	def setContent(self, content, date = None):
 		self.m_content = content
@@ -213,11 +214,14 @@ class FileNode(Node):
 		if date:
 			stat.setModTime(date)
 
+	def setUseCache(self, on_off):
+		self.m_use_cache = on_off
+
 	def setBoolean(self, value):
 		self.setContent("1" if value else "0")
 
 	def read(self, length, offset):
-		if self.m_content is None:
+		if self.m_content is None or not self.m_use_cache:
 			self.fetchContent()
 
 		return self.m_content[offset:offset+length]
