@@ -477,13 +477,33 @@ class BuildlogNode(oscfs.types.FileNode):
 		self.m_package = package
 		self.m_repo = repo
 		self.m_arch = arch
+		self.m_last_checksum = ""
+		self.setUseCache(False)
 
 	def fetchContent(self):
 		obs = self.getRoot().getObs()
-		log = obs.getBuildlog(
-			self.m_project, self.m_package,
-			self.m_repo, self.m_arch
-		)
+
+		args = (self.m_project, self.m_package, self.m_repo,
+				self.m_arch)
+
+		results = obs.getBuildResults(*args)
+		if results.getNumResults() == 1:
+			pkg, code = results.getResults()[0].getPackages()[0]
+			if code in ('disabled', 'excluded', 'scheduled'):
+				self.setContent("Build is {}, currently no log".format(code))
+				return
+			if results.getChecksum() == self.m_last_checksum:
+				# keep the currently cached content, nothing
+				# changed
+				return
+
+			self.m_last_checksum = results.getChecksum()
+		else:
+			# can't determine state, what to do?
+			# simply try fetching the log ...
+			pass
+
+		log = obs.getBuildlog(*args)
 		self.setContent(log)
 
 class BuildlogsDir(oscfs.types.DirNode):
