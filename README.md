@@ -4,7 +4,8 @@
 
 *oscfs* is a FUSE based user space file system that allows to access open
 build service (OBS) instances. It is based on the *osc* (openSUSE Commander)
-python package for interfacing with OBS.
+python package for interfacing with OBS. At the moment it provides read-only
+access for inspecting packages and their metadata.
 
 # Dependencies
 
@@ -23,6 +24,7 @@ available for python3 at the moment.
   system.
 - Access to individual package files including old revisions.
 - Access to project and package metadata via pseudo files.
+- Access to package buildlogs and artifacts.
 - Configurable runtime caching of cached data.
 
 ## Usage
@@ -126,8 +128,48 @@ directory:
   available for the package. Each directory is named after the commit revision
   number. Each directory contains the state of the package's files as of that
   revision.
+- `buildresults`: A file that contains the current package build results for
+  each repository/architecture combination.
+- `buildlogs`: a directory below which a hierarchy of repository/architecture
+  files can be found. The architecture files are regular files that return the
+  build log of the package for the repository/architecture combination it
+  represents.
+- `binaries`: a directory below which a hierarchy of repository/architecture
+  directories can be found. Within the architecture directory the binary
+  artifacts can be found that have been produced in the package for the
+  repository/architecture combination it represents.
+- `incident`: a symlink only present in package updates that originate from a
+  maintenance incident. In this case this symlink points to the maintenance
+  project where the package was built. For this to work the file system needs
+  to be mounted with the `--maintenance` parameter.
 
-## Performance Hints
+## Usage Hints
+
+### How the Runtime Caching Works
+
+Each operation performed on the file system in some way needs to talk to the
+remote OBS instance. This is a slow process and needs to be minimized. The
+`oscfs` performs lazy evaluation of directory contents. This means that only
+when you access a certain path for the first time will the actual contents be
+determined by communicating with the OBS instance. This will take a noticeable
+amount of time. The second time you will access the same path a locally cached
+version of the file or directory will be served. This will take considerably
+less time.
+
+Caching also means that the state of files shown in the file system may not
+correspond to the state on the remote server any more. Therefore `oscfs`
+refetches the contents of files and directories after the cache has reached a
+certain age as is determined by the `--cache-time` parameter. This only
+happens when a cached path is accessed after the configured cache time has
+passed since the last retrieval of data from the remote server. You can also
+explicitly invalidate the caching for a complete package by writing to the
+`refresh` control file documented above.
+
+When `oscfs` is restarted then any previously cached contents are lost. This
+means that the cache is not written to the local disk in any form. Fetching a
+lot amount of data from the remote server should be avoided (e.g. don't call
+`find` for the complete file system). This would be a kind of denial of
+service attack on the remote server.
 
 ### Sorting of Directory Contents
 
@@ -147,9 +189,9 @@ for this is that for determining the size of the content, the content would
 need to be accessed right away. This would slow down e.g. recursive searching
 for file names considerably. Therefore some metadata like the size of pseudo
 files is only calculated after it is accessed the first time. Since some of
-the pseudo files may return dynamic data the display file size is also subject
-to change at any time i.e. it only reflects a snapshot of the data as it was
-last seen by `oscfs`.
+the pseudo files may return dynamic data the displayed file size is also
+subject to change at any time i.e. it only reflects a snapshot of the data as
+it was last seen by `oscfs`.
 
 ## Usage Examples
 
