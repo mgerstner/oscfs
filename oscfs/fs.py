@@ -71,6 +71,34 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 			)
 		)
 
+	def _checkAuth(self):
+		"""Check for correct authentication at the remote server."""
+		# simply fetch the root entries, this will also benefit the
+		# initial access at least. On HTTP 401 this will throw an
+		# exception.
+		import urllib2
+		try:
+			names = self.m_root.getNames()
+			return
+		except urllib2.HTTPError as e:
+			if e.code == 401:
+				print(
+					"Authorization at the remote server failed. Please check your ~/.oscrc user/pass settings for API url {}.".format(
+						self.m_args.apiurl
+					),
+					file = sys.stderr
+				)
+			else:
+				print("HTTP error occured trying to access the remote server:")
+				print(e)
+		except Exception as e:
+			print(
+				"Accessing the remote server failed:",
+				e, file = sys.stderr
+			)
+
+		sys.exit(1)
+
 	def _getNode(self, path, fh = None):
 
 		if fh != None:
@@ -88,6 +116,8 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 		self.m_root = oscfs.root.Root(self.m_obs, self.m_args)
 		if self.m_args.cache_time != None:
 			oscfs.types.Node.setMaxCacheTime(self.m_args.cache_time)
+
+		self._checkAuth()
 
 		fuse.FUSE(
 			self,
