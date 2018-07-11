@@ -26,8 +26,8 @@ class Obs(object):
 			osc.conf.get_config()
 		except osc.oscerr.NoConfigfile:
 			raise Exception("No .oscrc config file found. Please configure OSC first.")
-		except osc.oscerr.ConfigError:
-			raise Exception("No valid configuration found in .oscrc. Please configure OSC first.")
+		except osc.oscerr.ConfigError as e:
+			raise Exception("No valid configuration found in .oscrc: {}. Please configure OSC first.".format(str(e)))
 
 		osc.conf.config["apiurl"] = apiurl
 
