@@ -25,8 +25,15 @@ class OscFsRegtest(object):
 			description = "Regression tests for oscfs"
 		)
 
-		# subprocess object, if any
+		self.m_api_url = "https://api.opensuse.org"
+
+		# subprocess object used by mount(), umount()
 		self.m_oscfs_proc = None
+
+		import osc.conf
+		# determines the active oscrc configuration file
+		self.m_oscrc_config = os.path.expanduser(
+				osc.conf.identify_conf())
 
 	def _lookupOscFsBin(self):
 
@@ -49,19 +56,35 @@ class OscFsRegtest(object):
 
 		os.rmdir(self.m_mnt_dir)
 
-	def mount(self, args = []):
+	def _moveOscConfig(self):
+		"""Renames all osc configuration files to allow writing new
+		ones for testing."""
+
+		back_config = self.m_oscrc_config + ".back"
+		os.rename(self.m_oscrc_config, back_config)
+
+	def _restoreOscConfig(self):
+		"""Restores osc configuration files previously renamed by
+		_moveOscConfig()."""
+		back_config = self.m_oscrc_config + ".back"
+		os.rename(back_config, self.m_oscrc_config)
+
+	def mount(self, args = [], foreground = True, stderr_pipe = False):
 
 		# first umount previous instance, if necessary
 		self.umount()
+		foreground = ["-f"] if foreground else []
 
 		self.m_oscfs_proc = subprocess.Popen(
-			[ self.m_oscfs_bin, "-f" ] + args + [ self.m_mnt_dir ],
+			[ self.m_oscfs_bin ] + foreground + args +\
+				[ self.m_mnt_dir ],
 			close_fds = True,
 			shell = False,
-			stdout = subprocess.PIPE
+			stdout = subprocess.PIPE,
+			stderr = subprocess.PIPE if stderr_pipe else None
 		)
-		
-		while True:
+
+		while foreground:
 			line = self.m_oscfs_proc.stdout.readline()
 
 			if not line:
@@ -170,9 +193,64 @@ class OscFsRegtest(object):
 
 		doWalk("refreshed uncached package access", lambda d: d < 1.0)
 
+	def performAuthErrorTest(self):
+		"""The purpose of this test is to see whether bad
+		authentication at the remote server immediately leads to an
+		error, even without '-f'."""
+
+		self._moveOscConfig()
+
+		min_config = """
+[general]
+apirul = {url}
+
+[{url}]
+user={user}
+pass={_pass}
+"""
+
+		with open(self.m_oscrc_config, 'w') as oscrc:
+			print(min_config.format(
+					url = self.m_api_url,
+					user = "somebody",
+					_pass = "somepass"
+				), file = oscrc
+			)
+
+		# this is actually more complex, osc chokes on various other
+		# conditions like config file not being there, config for
+		# apiurl missing etc.
+		#
+		# we need to setup a minimum configuration file without
+		# password
+
+		try:
+			print("Testing for early authentication error")
+			# temporarily remove any osc authentication
+			self.mount(foreground = False, stderr_pipe = True)
+
+			found_auth_error = False
+
+			while True:
+				line = self.m_oscfs_proc.stderr.readline()
+
+				if not line:
+					break
+				elif line.lower().find("authorization at the remote server failed") != -1:
+					found_auth_error = True
+
+			res = self.m_oscfs_proc.wait()
+			self.m_oscfs_proc = None
+
+			if res != 1 or not found_auth_error:
+				raise Exception("No authentication error code or message was reported: code = {}".format(res))
+		finally:
+			self._restoreOscConfig()
+
 	def performTests(self):
 
 		self.performMountTests()
+		self.performAuthErrorTest()
 		self.performCacheTests()
 
 	def run(self):
