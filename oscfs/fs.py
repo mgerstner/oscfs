@@ -100,6 +100,15 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 			direct_io = True
 		)
 
+	def init(self, path):
+		"""This is called upon file system initialization."""
+		if self.m_args.f:
+			# print a status message that allows e.g. the regtest
+			# program to determine when the file system is
+			# actually mounted
+			print("file system initialized")
+			sys.stdout.flush()
+
 	# global file system methods
 
 	def getattr(self, path, fh = None):
