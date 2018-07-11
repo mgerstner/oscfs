@@ -68,6 +68,19 @@ class UrlopenWrapper(object):
 				)
 
 				resp = connection.getresponse()
+
+				if resp.status == 401:
+					# urllib2.urlopen seems to implicitly
+					# handle this case, so let's do this,
+					# too
+					raise urllib2.HTTPError(
+						req.get_full_url(),
+						resp.status,
+						resp.msg,
+						resp.getheaders(),
+						resp.fp
+					)
+
 				return self._extendedResponse(resp)
 			except httplib.BadStatusLine as e:
 				# probably an http keep-alive issue
