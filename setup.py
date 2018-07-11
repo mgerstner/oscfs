@@ -17,8 +17,13 @@ def getLongDesc():
 		# dynamically generate a restructured text formatted long description
 		# from markdown for setuptools to use
 		import subprocess
+		pandoc = "/usr/bin/pandoc"
+		if not os.path.exists(pandoc):
+			raise Exception("Can't generate RST readme from MD readme, because pandoc isn't installed")
 		subprocess.check_call(
-			[ "/usr/bin/pandoc", "-f", "markdown", "-t", "rst", "-o", "README.rst", "README.md" ]
+			[ pandoc, "-f", "markdown", "-t", "rst", "-o", "README.rst", "README.md" ],
+			shell = False,
+			close_fds = True
 		)
 		remove_rst = True
 
@@ -32,11 +37,11 @@ long_desc = getLongDesc()
 try:
 	setup(
 		name = 'oscfs',
-		version = '0.5.0',
+		version = '0.6.0',
 		description = 'A FUSE based file system to access Open Build Service (OBS) instances',
 		long_description = long_desc,
 		author = 'Matthias Gerstner',
-		author_email = 'mgerstner@suse.de',
+		author_email = 'matthias.gerstner@suse.de',
 		license = 'GPL2',
 		keywords = 'fuse obs osc openSUSE',
 		packages = ['oscfs'],
