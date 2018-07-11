@@ -328,7 +328,10 @@ class RequestNode(oscfs.types.FileNode):
 
 		super(RequestNode, self).__init__(parent, name)
 		self.m_req = req
-		text = str(req)
+		try:
+			text = unicode(req).encode('utf8')
+		except UnicodeEncodeError:
+			text = "<unicode-error>"
 		self.setContent(text, self.getReqModTime())
 
 	def getReqModTime(self):
