@@ -19,7 +19,8 @@ def getLongDesc():
 		import subprocess
 		pandoc = "/usr/bin/pandoc"
 		if not os.path.exists(pandoc):
-			raise Exception("Can't generate RST readme from MD readme, because pandoc isn't installed")
+			print("Can't generate RST readme from MD readme, because pandoc isn't installed. Skipping long description.", file = sys.stderr)
+			return "no long description available"
 		subprocess.check_call(
 			[ pandoc, "-f", "markdown", "-t", "rst", "-o", "README.rst", "README.md" ],
 			shell = False,
