@@ -531,7 +531,6 @@ class BinaryFileNode(oscfs.types.FileNode):
 		self.m_repo = repo
 		self.m_arch = arch
 		self.m_binary = binary
-		self.setUseCache(False)
 		self._setMeta()
 
 	def _setMeta(self):
