@@ -38,7 +38,7 @@ long_desc = getLongDesc()
 try:
 	setup(
 		name = 'oscfs',
-		version = '0.6.0',
+		version = '0.6.1',
 		description = 'A FUSE based file system to access Open Build Service (OBS) instances',
 		long_description = long_desc,
 		author = 'Matthias Gerstner',
@@ -47,7 +47,7 @@ try:
 		keywords = 'fuse obs osc openSUSE',
 		packages = ['oscfs'],
 		install_requires = ['osc', 'fusepy'],
-		#url = 'https://github.com/mgerstner/oscfs',
+		url = 'https://github.com/mgerstner/oscfs',
 		classifiers = [
 			'Intended Audience :: Developers',
 			'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
