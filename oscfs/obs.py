@@ -547,10 +547,8 @@ class PackageInfo(InfoBase):
 				# e.g. "images" in openSUSE:Factory
 				continue
 
-			if self.getAllDisabled() \
-				or not repo.getEnabled() \
-				or project_info.getAllDisabled():
-				# either by default all repos are off of this
+			if self.getAllDisabled() or not repo.getEnabled():
+				# either by default all repos are off or this
 				# specific repo is off
 				archs = []
 			else:
@@ -709,10 +707,25 @@ class ProjectInfo(InfoBase):
 		else:
 			self.reset()
 
+	def __str__(self):
+
+		ret = "Project Info for {}:\n".format(self.getName())
+
+		ret += "all disabled = " + self.getAllDisabled() + "\n"
+
+		for repo in self.m_repos:
+			ret += "- repository {} with archs {}\n".format(
+				repo.getName(),
+				", ".join(repo.getArchs())
+			)
+
+		return ret
+
 	def reset(self):
 		InfoBase.reset(self)
 		self.m_repos = []
 		self.m_disabled_repos = []
+		self.m_enabled_repos = []
 		self.m_debuginfo = None
 		self.m_locked = False
 		self.m_all_disabled = False
@@ -751,20 +764,29 @@ class ProjectInfo(InfoBase):
 
 		for repo in self.m_repos:
 
-			if repo.getName() in self.m_disabled_repos:
+			if repo in self.m_enabled_repos:
+				repo.setEnabled(True)
+			elif repo in self.m_disabled_repos:
+				repo.setEnabled(False)
+			elif self.getAllDisabled():
 				repo.setEnabled(False)
 
 	def parseBuild(self, el):
 		for child in el:
-			if child.tag == "disable":
+			if child.tag in ("disable", "enable"):
+				is_enable = child.tag == "enable"
 				attrib = child.attrib
 				repo = attrib.get("repository", None)
 				arch = attrib.get("arch", None)
 
+				repo_list = self.m_enabled_repos if \
+					is_enable else \
+					self.m_disabled_repos
+
 				if repo or arch:
-					self.m_disabled_repos.append(repo)
+					repo_list.append(repo)
 				else:
-					self.setAllDisabled(True)
+					self.setAllDisabled(not is_enable)
 
 	def getAllDisabled(self):
 		return self.m_all_disabled
