@@ -127,7 +127,8 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 			# direct_io is necessary in our use case to avoid
 			# caching in the kernel and support dynamically
 			# determined file contents
-			direct_io = True
+			direct_io = True,
+			nonempty = True
 		)
 
 	def init(self, path):
