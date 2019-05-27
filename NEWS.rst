@@ -1,3 +1,10 @@
+0.7.0
+=====
+
+- Added support for running in Python3 with the Python3 osc module installed.
+- support mounting of oscfs in non-empty directories.
+- minor bugfixes with accessing package and project meta data via `.oscfs`.
+
 0.6.1
 =====
 
