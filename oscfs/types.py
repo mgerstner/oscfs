@@ -193,16 +193,19 @@ class Node(object):
 	def getPackage(self):
 		"""Returns the package node the current node belongs to."""
 		import oscfs.package
-		ret = self
-		while True:
-			ret = ret._findParent(oscfs.package.Package)
 
+		ret = self if isinstance(self, oscfs.package.Package) else \
+				self._findParent(oscfs.package.Package)
+
+		while True:
 			# in case of nested paths like
 			# project/package/.oscfs/revisions/5/file we need to
 			# get the package node closest to the root that
 			# doesn't have a revision set
 			if ret.getRevision() is None:
 				return ret
+
+			ret = ret._findParent(oscfs.package.Package)
 
 	def getProject(self):
 		"""Returns the project node the current node belongs to."""
