@@ -551,39 +551,7 @@ class PackageInfo(InfoBase):
 				# e.g. "images" in openSUSE:Factory
 				continue
 
-			if self.getAllDisabled() or not repo.getEnabled():
-				# either by default all repos are off or this
-				# specific repo is off
-				archs = []
-			else:
-				archs = repo.getArchs()
-
-			# add explicitly enabled builds
-			for name, arch in self.getEnabledBuilds():
-
-				if repo.getName() != name:
-					continue
-
-				if arch:
-					archs.add(arch)
-				else:
-					# the complete repo is enabled for all
-					# archs
-					archs = repo.getArchs()
-
-			# remove any repo/arch combination locally
-			# disabled in the package
-			for name, arch in self.getDisabledBuilds():
-
-				if repo.getName() != name:
-					continue
-
-				if arch:
-					archs.remove(arch)
-				else:
-					# the complete repo is disabled for
-					# all archs
-					archs = []
+			archs = repo.getArchs()
 
 			for arch in archs:
 				ret.append( (repo.getName(), arch) )
