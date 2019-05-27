@@ -1,5 +1,7 @@
-import urllib2
-import httplib
+import oscfs.misc
+
+urllib_req = oscfs.misc.importUrllib()
+http_client = oscfs.misc.importHttplib()
 
 # This urlopen wrapper makes http connection reuse possible.
 #
@@ -34,25 +36,30 @@ class UrlopenWrapper(object):
 		self._setupWrapper()
 
 	def _setupWrapper(self):
-		self.m_orig_urlopen = urllib2.urlopen
-		urllib2.urlopen = self._wrapper
+		self.m_orig_urlopen = urllib_req.urlopen
+		urllib_req.urlopen = self._wrapper
 
 	def _wrapper(self, req, data):
 		import base64
 		import osc.conf
 
-		proto, host = req.get_type(), req.get_host()
+		if hasattr(req, "get_type"):
+			# python2 API
+			proto, host = req.get_type(), req.get_host()
+		else:
+			# python3 API
+			proto, host = req.type, req.host
 
 		api_key = "{}://{}".format(proto, host)
 		api_conf = osc.conf.config["api_host_options"].get(api_key, None)
 
 		# add user/password, but only if it's an encrypted connection
-		if proto == "https" and api_conf:
+		if proto == 'https' and api_conf:
 			userpw = "{}:{}".format(
 				api_conf["user"], api_conf["pass"]
 			)
 			auth = "Basic {}".format(
-				base64.b64encode(userpw)
+				base64.b64encode(userpw.encode()).decode()
 			)
 			req.add_unredirected_header("Authorization", auth)
 
@@ -63,7 +70,8 @@ class UrlopenWrapper(object):
 				connection.request(
 					req.get_method(),
 					req.get_full_url(),
-					req.get_data(),
+					# get_data() is the Python2 API
+					req.get_data() if hasattr(req, "get_data") else req.data,
 					dict(req.header_items())
 				)
 
@@ -73,7 +81,7 @@ class UrlopenWrapper(object):
 					# urllib2.urlopen seems to implicitly
 					# handle this case, so let's do this,
 					# too
-					raise urllib2.HTTPError(
+					raise urllib_req.HTTPError(
 						req.get_full_url(),
 						resp.status,
 						resp.msg,
@@ -82,7 +90,7 @@ class UrlopenWrapper(object):
 					)
 
 				return self._extendedResponse(resp)
-			except httplib.BadStatusLine as e:
+			except http_client.BadStatusLine as e:
 				# probably an http keep-alive issue
 				#
 				# reestablish the connection and retry
@@ -150,11 +158,11 @@ class UrlopenWrapper(object):
 		import osc.conf
 
 		if proto == "https":
-			Connection = httplib.HTTPSConnection
+			Connection = http_client.HTTPSConnection
 		elif proto == "http":
-			Connection = httplib.HTTPConnection
+			Connection = http_client.HTTPConnection
 		else:
-			raise Exception("Unsupported urlopen protocol " + proto)
+			raise Exception("Unsupported urlopen protocol " + str(proto))
 
 		connection = Connection(host)
 

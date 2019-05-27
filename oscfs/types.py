@@ -251,7 +251,11 @@ class FileNode(Node):
 		if self.m_content is None or not self.m_use_cache:
 			self.fetchContent()
 
-		return self.m_content[offset:offset+length]
+		ret = self.m_content[offset:offset+length]
+		if oscfs.misc.isPython3() and isinstance(ret, str):
+			ret = ret.encode('utf8')
+
+		return ret
 
 class TriggerNode(Node):
 	"""Specialized Node type for writable pseudo files. It expects a
@@ -273,6 +277,8 @@ class TriggerNode(Node):
 
 		def bad():
 			raise fuse.FuseOSError(errno.EINVAL)
+
+		data = data.decode()
 
 		if offset != 0:
 			bad()
@@ -305,7 +311,7 @@ class DirNode(Node):
 		self.updateIfNeeded()
 
 		dots = [".", ".."]
-		entries = self.m_entries.keys()
+		entries = list(self.m_entries.keys())
 
 		return entries + dots
 

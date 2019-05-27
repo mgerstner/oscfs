@@ -6,7 +6,11 @@ from xml.etree import cElementTree as et
 import datetime
 
 # urllib2 replacement, needs to be imported before osc.core
-import oscfs.urlopenwrapper
+#
+# for some reason in Python3 the ulropenwrapper with reusing connections is 3
+# times slower than using urllib without reusing connections. No idea what
+# that is about. Removing the urlopenwrapper hack for the time being.
+#import oscfs.urlopenwrapper
 
 # third party modules
 import osc.core
@@ -48,7 +52,7 @@ class Obs(object):
 
 		xml_lines = osc.core.show_project_meta(self.m_apiurl, project)
 
-		return '\n'.join(xml_lines)
+		return '\n'.join([line.decode() for line in xml_lines])
 
 	def getProjectInfo(self, project):
 		"""Returns an object of type ProjectInfo for the given
@@ -243,7 +247,7 @@ class Obs(object):
 			package
 		)
 
-		return '\n'.join(xml_lines)
+		return '\n'.join([line.decode() for line in xml_lines])
 
 	def getPackageInfo(self, project, package):
 		"""Returns an object of type PackageInfo for the given
@@ -290,7 +294,7 @@ class Obs(object):
 			repository = repo, arch = arch
 		)
 
-		return '\n'.join(xml_lines)
+		return '\n'.join([line.decode() for line in xml_lines])
 
 	def getBuildResults(self, *args, **kwargs):
 		"""Like getBuildResultsMeta() but returns a list of

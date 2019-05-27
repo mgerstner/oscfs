@@ -27,7 +27,7 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 		# (file handles need to be integers)
 		self.m_handles = [None] * 1024
 		# unallocated file handles
-		self.m_free_handles = range(1024)
+		self.m_free_handles = list(range(1024))
 		self._setupParser()
 
 	def _setupParser(self):
@@ -76,11 +76,12 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 		# simply fetch the root entries, this will also benefit the
 		# initial access at least. On HTTP 401 this will throw an
 		# exception.
-		import urllib2
+		import oscfs.misc
+		urllib_req = oscfs.misc.importUrllib()
 		try:
 			names = self.m_root.getNames()
 			return
-		except urllib2.HTTPError as e:
+		except urllib_req.HTTPError as e:
 			if e.code == 401:
 				print(
 					"Authorization at the remote server failed. Please check your ~/.oscrc user/pass settings for API url {}.".format(
@@ -96,6 +97,7 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 				"Accessing the remote server failed:",
 				e, file = sys.stderr
 			)
+			raise
 
 		sys.exit(1)
 
