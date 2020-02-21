@@ -274,7 +274,7 @@ class Obs(object):
 		# and supports yield semantics. This breaks with our
 		# urlopenwrapper hack, however so we don't use it.
 		for line in osc.core.streamfile(url):
-			ret += line
+			ret += line.decode('utf8')
 
 		return ret
 
