@@ -220,7 +220,15 @@ class Node(object):
 		if self.isCacheStale():
 			if self.doAutoClearOnUpdate() and self.isDirectory():
 				self.clearEntries()
-			self.update()
+			try:
+				self.update()
+			except Exception as e:
+				print("Failed to update {}: {}".format(
+					self.getName(),
+					oscfs.misc.getFriendlyException(e),
+					file = sys.stderr
+				))
+				raise fuse.FuseOSError(errno.EFAULT)
 			self.setCacheFresh()
 
 class FileNode(Node):
