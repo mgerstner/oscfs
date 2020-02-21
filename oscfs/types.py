@@ -150,6 +150,9 @@ class Node(object):
 		self.m_type = _type
 		self.m_stat.setFileType(_type)
 
+	def isDirectory(self):
+		return self.m_type == FileType.directory
+
 	def _setAutoClearOnUpdate(self, on_off):
 		self.m_auto_clear_on_update = on_off
 
@@ -215,7 +218,7 @@ class Node(object):
 	def updateIfNeeded(self):
 		"""Calls the update method if it is necessary."""
 		if self.isCacheStale():
-			if self.doAutoClearOnUpdate():
+			if self.doAutoClearOnUpdate() and self.isDirectory():
 				self.clearEntries()
 			self.update()
 			self.setCacheFresh()
