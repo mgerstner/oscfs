@@ -1,3 +1,13 @@
+0.7.1
+=====
+
+- fix read() with offset especially with large files. This fixes use of
+  various tools when applied on oscfs files e.g. `rpm2cpio` or
+  `tail *.spec` previously failed or behaved strangely.
+- be robust against non-ASCII characters in OBS buildlogs.
+- apply caching also to actual file content to be more efficient when e.g.
+  operating on larger files.
+
 0.7.0
 =====
 

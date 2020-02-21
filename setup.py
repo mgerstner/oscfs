@@ -38,7 +38,7 @@ long_desc = getLongDesc()
 try:
 	setup(
 		name = 'oscfs',
-		version = '0.7.0',
+		version = '0.7.1',
 		description = 'A FUSE based file system to access Open Build Service (OBS) instances',
 		long_description = long_desc,
 		author = 'Matthias Gerstner',
