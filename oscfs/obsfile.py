@@ -30,5 +30,5 @@ class ObsFile(oscfs.types.Node):
 			revision = self.m_revision
 		)
 
-		return data[offset:length]
+		return self.m_data[offset:offset+length]
 
