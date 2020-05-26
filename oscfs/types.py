@@ -6,6 +6,7 @@ import datetime
 import time
 import stat
 import errno
+import sys
 
 # third party modules
 import fuse
