@@ -246,6 +246,8 @@ class FileNode(Node):
 		self.m_use_cache = True
 
 	def setContent(self, content, date = None):
+		if oscfs.misc.isPython3() and isinstance(content, str):
+			content = content.encode('utf8')
 		self.m_content = content
 		stat = self.getStat()
 		stat.setSize(len(content))
@@ -264,8 +266,6 @@ class FileNode(Node):
 			self.fetchContent()
 
 		ret = self.m_content[offset:offset+length]
-		if oscfs.misc.isPython3() and isinstance(ret, str):
-			ret = ret.encode('utf8')
 
 		return ret
 
