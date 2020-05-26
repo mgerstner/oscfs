@@ -50,6 +50,9 @@ def isPython3():
 	"""Returns whether the current interpreter is of major version 2."""
 	return sys.version_info.major == 3
 
+def _unicode(arg):
+	return str(arg) if isPython3() else unicode(arg)
+
 def getFriendlyException(ex):
 	"""Returns a friendly description of the currently active exception
 	as a one-line string. This only works when called from an except:

@@ -9,6 +9,7 @@ import oscfs.obs
 import oscfs.obsfile
 import oscfs.link
 import oscfs.refreshtrigger
+from oscfs.misc import _unicode
 
 class Package(oscfs.types.DirNode):
 	"""This type represents a package node of the file system containing
@@ -329,7 +330,7 @@ class RequestNode(oscfs.types.FileNode):
 		super(RequestNode, self).__init__(parent, name)
 		self.m_req = req
 		try:
-			text = unicode(req).encode('utf8')
+			text = _unicode(req).encode('utf8')
 		except UnicodeEncodeError:
 			text = "<unicode-error>"
 		self.setContent(text, self.getReqModTime())
