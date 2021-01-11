@@ -268,13 +268,13 @@ class Obs(object):
 			"_log?start=0&nostream=1"
 		] )
 
-		ret = ""
+		ret = b""
 
 		# NOTE: streamfile supports bufsize="line" to read line wise
 		# and supports yield semantics. This breaks with our
 		# urlopenwrapper hack, however so we don't use it.
 		for line in osc.core.streamfile(url):
-			ret += line.decode('utf8')
+			ret += line
 
 		return ret
 
