@@ -1,5 +1,4 @@
-#!/usr/bin/env python2
-# vim: ts=8 sw=8 sts=8 :
+#!/usr/bin/env python3
 
 from __future__ import with_statement, print_function
 import os, sys
@@ -13,6 +12,10 @@ import datetime
 def eprint(*args, **kwargs):
 
 	kwargs["file"] = sys.stderr
+	print(*args, **kwargs)
+
+def fprint(*args, **kwargs):
+	kwargs['flush'] = True
 	print(*args, **kwargs)
 
 class OscFsRegtest(object):
@@ -33,7 +36,8 @@ class OscFsRegtest(object):
 		import osc.conf
 		# determines the active oscrc configuration file
 		self.m_oscrc_config = os.path.expanduser(
-				osc.conf.identify_conf())
+				osc.conf.identify_conf()
+		)
 
 	def _lookupOscFsBin(self):
 
@@ -76,20 +80,24 @@ class OscFsRegtest(object):
 		foreground = ["-f"] if foreground else []
 
 		self.m_oscfs_proc = subprocess.Popen(
-			[ self.m_oscfs_bin ] + foreground + args +\
-				[ self.m_mnt_dir ],
+			[ self.m_oscfs_bin ] + foreground + args + [ self.m_mnt_dir ],
 			close_fds = True,
 			shell = False,
 			stdout = subprocess.PIPE,
 			stderr = subprocess.PIPE if stderr_pipe else None
 		)
 
-		while foreground:
-			line = self.m_oscfs_proc.stdout.readline()
+		if not foreground:
+			return
+
+		for line in self.m_oscfs_proc.stdout:
 
 			if not line:
 				raise Exception("Mounting file system failed")
-			elif line.strip() == "file system initialized":
+
+			line = line.decode('utf8').strip()
+
+			if line == "file system initialized":
 				break
 
 		# TODO: should we close the pipe from here? This could cause
@@ -121,7 +129,7 @@ class OscFsRegtest(object):
 
 		def checkTopDirs(homes, maintenance):
 
-			print("Testing mount with homes = {} and maintenance = {}".format(homes, maintenance))
+			fprint("Testing mount with homes = {} and maintenance = {}".format(homes, maintenance))
 
 			top_dirs = os.listdir(self.m_mnt_dir)
 			if len(top_dirs) == 0:
@@ -151,17 +159,17 @@ class OscFsRegtest(object):
 
 		# NOTE: testing the --ptf parameter is difficult, because on
 		# OBS there are not PTFs.
-		self.mount()
-		checkTopDirs(False, False)
-
-		self.mount(["--homes"])
-		checkTopDirs(True, False)
-
-		self.mount(["--maintenance"])
-		checkTopDirs(False, True)
-
-		self.mount(["--homes", "--maintenance"])
-		checkTopDirs(True, True)
+		for config in (
+				([], False, False),
+				(["--homes"], True, False),
+				(["--maintenance"], False, True),
+				(["--homes", "--maintenance"], True, True)
+		):
+			pars, homes, maint = config
+			fprint("testing mount with", ' '.join(pars) if pars else "(default)")
+			self.mount(pars)
+			checkTopDirs(homes, maint)
+			fprint("mount test successful")
 
 	def performCacheTests(self):
 		"""This test checks whether a cache effect can be observed
@@ -200,9 +208,9 @@ class OscFsRegtest(object):
 
 		self._moveOscConfig()
 
-		min_config = """
+		MIN_CONFIG = """
 [general]
-apirul = {url}
+apiurl = {url}
 
 [{url}]
 user={user}
@@ -210,7 +218,7 @@ pass={_pass}
 """
 
 		with open(self.m_oscrc_config, 'w') as oscrc:
-			print(min_config.format(
+			print(MIN_CONFIG.format(
 					url = self.m_api_url,
 					user = "somebody",
 					_pass = "somepass"
@@ -218,11 +226,10 @@ pass={_pass}
 			)
 
 		# this is actually more complex, osc chokes on various other
-		# conditions like config file not being there, config for
-		# apiurl missing etc.
+		# conditions like config file not being there, config for apiurl
+		# missing etc.
 		#
-		# we need to setup a minimum configuration file without
-		# password
+		# we need to setup a minimum configuration file without password
 
 		try:
 			print("Testing for early authentication error")
@@ -231,12 +238,10 @@ pass={_pass}
 
 			found_auth_error = False
 
-			while True:
-				line = self.m_oscfs_proc.stderr.readline()
+			for line in self.m_oscfs_proc.stderr:
+				line = line.decode('utf8').strip()
 
-				if not line:
-					break
-				elif line.lower().find("authorization at the remote server failed") != -1:
+				if line.lower().find("authorization at the remote server failed") != -1:
 					found_auth_error = True
 
 			res = self.m_oscfs_proc.wait()
@@ -249,8 +254,11 @@ pass={_pass}
 
 	def performTests(self):
 
+		fprint("Running mount tests")
 		self.performMountTests()
+		fprint("Running auth error tests")
 		self.performAuthErrorTest()
+		fprint("Running cache tests")
 		self.performCacheTests()
 
 	def run(self):
