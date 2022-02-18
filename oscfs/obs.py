@@ -172,6 +172,12 @@ class Obs(object):
 
 	def _download(self, urlcomps, query = dict()):
 
+		import urllib.parse
+		# makeurl below doesn't urlencode the actual url components, only the
+		# query parameters. This breaks certain file names that e.g. contain
+		# '#'. So let's explicitly urlencode them.
+		urlcomps = [ urllib.parse.quote_plus(comp) for comp in urlcomps ]
+
 		url = osc.core.makeurl(
 			self.m_apiurl,
 			urlcomps,
