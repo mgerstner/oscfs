@@ -30,143 +30,143 @@ http_client = oscfs.misc.importHttplib()
 
 class UrlopenWrapper(object):
 
-	def __init__(self):
+    def __init__(self):
 
-		self.m_connections = {}
-		self._setupWrapper()
+        self.m_connections = {}
+        self._setupWrapper()
 
-	def _setupWrapper(self):
-		self.m_orig_urlopen = urllib_req.urlopen
-		urllib_req.urlopen = self._wrapper
+    def _setupWrapper(self):
+        self.m_orig_urlopen = urllib_req.urlopen
+        urllib_req.urlopen = self._wrapper
 
-	def _wrapper(self, req, data):
-		import base64
-		import osc.conf
+    def _wrapper(self, req, data):
+        import base64
+        import osc.conf
 
-		if hasattr(req, "get_type"):
-			# python2 API
-			proto, host = req.get_type(), req.get_host()
-		else:
-			# python3 API
-			proto, host = req.type, req.host
+        if hasattr(req, "get_type"):
+            # python2 API
+            proto, host = req.get_type(), req.get_host()
+        else:
+            # python3 API
+            proto, host = req.type, req.host
 
-		api_key = "{}://{}".format(proto, host)
-		api_conf = osc.conf.config["api_host_options"].get(api_key, None)
+        api_key = "{}://{}".format(proto, host)
+        api_conf = osc.conf.config["api_host_options"].get(api_key, None)
 
-		# add user/password, but only if it's an encrypted connection
-		if proto == 'https' and api_conf:
-			userpw = "{}:{}".format(
-				api_conf["user"], api_conf["pass"]
-			)
-			auth = "Basic {}".format(
-				base64.b64encode(userpw.encode()).decode()
-			)
-			req.add_unredirected_header("Authorization", auth)
+        # add user/password, but only if it's an encrypted connection
+        if proto == 'https' and api_conf:
+            userpw = "{}:{}".format(
+                api_conf["user"], api_conf["pass"]
+            )
+            auth = "Basic {}".format(
+                base64.b64encode(userpw.encode()).decode()
+            )
+            req.add_unredirected_header("Authorization", auth)
 
-		connection = self._getConnection(proto, host)
-		retries = 0
-		while True:
-			try:
-				connection.request(
-					req.get_method(),
-					req.get_full_url(),
-					# get_data() is the Python2 API
-					req.get_data() if hasattr(req, "get_data") else req.data,
-					dict(req.header_items())
-				)
+        connection = self._getConnection(proto, host)
+        retries = 0
+        while True:
+            try:
+                connection.request(
+                    req.get_method(),
+                    req.get_full_url(),
+                    # get_data() is the Python2 API
+                    req.get_data() if hasattr(req, "get_data") else req.data,
+                    dict(req.header_items())
+                )
 
-				resp = connection.getresponse()
+                resp = connection.getresponse()
 
-				if resp.status == 401:
-					# urllib2.urlopen seems to implicitly
-					# handle this case, so let's do this,
-					# too
-					raise urllib_req.HTTPError(
-						req.get_full_url(),
-						resp.status,
-						resp.msg,
-						resp.getheaders(),
-						resp.fp
-					)
+                if resp.status == 401:
+                    # urllib2.urlopen seems to implicitly
+                    # handle this case, so let's do this,
+                    # too
+                    raise urllib_req.HTTPError(
+                        req.get_full_url(),
+                        resp.status,
+                        resp.msg,
+                        resp.getheaders(),
+                        resp.fp
+                    )
 
-				return self._extendedResponse(resp)
-			except http_client.BadStatusLine as e:
-				# probably an http keep-alive issue
-				#
-				# reestablish the connection and retry
-				connection = self._getConnection(
-					proto, host, renew = True
-				)
-				retries += 1
+                return self._extendedResponse(resp)
+            except http_client.BadStatusLine as e:
+                # probably an http keep-alive issue
+                #
+                # reestablish the connection and retry
+                connection = self._getConnection(
+                    proto, host, renew = True
+                )
+                retries += 1
 
-				if retries > 3:
-					# avoid an infinite loop
-					raise
+                if retries > 3:
+                    # avoid an infinite loop
+                    raise
 
-	def _extendedResponse(self, resp):
-		"""This function returns a httplib response object that
-		matches the expectations of the osc module."""
-		import functools
+    def _extendedResponse(self, resp):
+        """This function returns a httplib response object that
+        matches the expectations of the osc module."""
+        import functools
 
-		def responseReadlines(resp):
-			return resp.read().splitlines()
+        def responseReadlines(resp):
+            return resp.read().splitlines()
 
-		def responseInfo(resp):
-			return resp
+        def responseInfo(resp):
+            return resp
 
-		def responseGet(header, resp):
-			return resp.getheader(header)
+        def responseGet(header, resp):
+            return resp.getheader(header)
 
-		# the urrlib result allows readlines() to be called so we need
-		# to cover that, too.
-		resp.readlines = functools.partial(
-			responseReadlines, resp = resp
-		)
-		# info() on urrlib2 objects returns a HTTPMessage object which
-		# we need to emulate
-		resp.info = functools.partial(
-			responseInfo, resp = resp
-		)
-		# emulate info().get('My-Header') to retrieve headers
-		resp.get = functools.partial(
-			responseGet, resp = resp
-		)
+        # the urrlib result allows readlines() to be called so we need
+        # to cover that, too.
+        resp.readlines = functools.partial(
+            responseReadlines, resp = resp
+        )
+        # info() on urrlib2 objects returns a HTTPMessage object which
+        # we need to emulate
+        resp.info = functools.partial(
+            responseInfo, resp = resp
+        )
+        # emulate info().get('My-Header') to retrieve headers
+        resp.get = functools.partial(
+            responseGet, resp = resp
+        )
 
-		return resp
+        return resp
 
-	def _getConnection(self, proto, host, renew = False):
+    def _getConnection(self, proto, host, renew = False):
 
-		key = (proto, host)
+        key = (proto, host)
 
-		if renew:
-			return self._addConnection(key)
+        if renew:
+            return self._addConnection(key)
 
-		try:
-			return self.m_connections[key]
-		except KeyError:
-			return self._addConnection(key)
+        try:
+            return self.m_connections[key]
+        except KeyError:
+            return self._addConnection(key)
 
-	def _addConnection(self, key):
-		proto, host = key
+    def _addConnection(self, key):
+        proto, host = key
 
-		connection = self.setupConnection(proto, host)
+        connection = self.setupConnection(proto, host)
 
-		self.m_connections[key] = connection
-		return connection
+        self.m_connections[key] = connection
+        return connection
 
-	def setupConnection(self, proto, host):
-		import osc.conf
+    def setupConnection(self, proto, host):
+        import osc.conf
 
-		if proto == "https":
-			Connection = http_client.HTTPSConnection
-		elif proto == "http":
-			Connection = http_client.HTTPConnection
-		else:
-			raise Exception("Unsupported urlopen protocol " + str(proto))
+        if proto == "https":
+            Connection = http_client.HTTPSConnection
+        elif proto == "http":
+            Connection = http_client.HTTPConnection
+        else:
+            raise Exception("Unsupported urlopen protocol " + str(proto))
 
-		connection = Connection(host)
+        connection = Connection(host)
 
-		return connection
+        return connection
 
 urlopen_wrapper = UrlopenWrapper()
 

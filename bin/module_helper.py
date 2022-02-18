@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# vim: ts=8 sw=8 sts=8 :
 
 from __future__ import print_function
 import os

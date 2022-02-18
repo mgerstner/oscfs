@@ -1,13 +1,12 @@
 #!/usr/bin/env python
-# vim: ts=8 sw=8 sts=8 :
 
 from __future__ import with_statement, print_function
 
 try:
-	import module_helper
+    import module_helper
 except ImportError:
-	# if oscfs is normally installed then this is okay
-	pass
+    # if oscfs is normally installed then this is okay
+    pass
 import oscfs.fs
 import oscfs.misc
 
