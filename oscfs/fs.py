@@ -79,7 +79,7 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 		import oscfs.misc
 		urllib_req = oscfs.misc.importUrllib()
 		try:
-			names = self.m_root.getNames()
+			prjinfo = self.m_obs.getProjectInfo("openSUSE:Factory")
 			return
 		except urllib_req.HTTPError as e:
 			if e.code == 401:
@@ -89,6 +89,9 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 					),
 					file = sys.stderr
 				)
+			elif e.code == 404:
+				# authorization worked but the project is not there, also fine
+				return
 			else:
 				print("HTTP error occured trying to access the remote server:")
 				print(e)
