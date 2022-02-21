@@ -28,7 +28,7 @@ import http.client
 # side instead.
 
 
-class UrlopenWrapper(object):
+class UrlopenWrapper:
 
     def __init__(self):
 

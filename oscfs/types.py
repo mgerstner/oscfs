@@ -12,13 +12,13 @@ import fuse
 import oscfs.misc
 
 
-class FileType(object):
+class FileType:
     regular = 1
     directory = 2
     symlink = 4
 
 
-class Stat(object):
+class Stat:
     start_time = datetime.datetime.now()
 
     def __init__(self):
@@ -95,7 +95,7 @@ class Stat(object):
         return (self.st_mode & stat.S_IWUSR) != 0
 
 
-class Node(object):
+class Node:
     """Generic file node type which needs to be specialized for regular
     files, directories et al.
 

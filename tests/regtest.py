@@ -19,7 +19,7 @@ def fprint(*args, **kwargs):
     print(*args, **kwargs)
 
 
-class OscFsRegtest(object):
+class OscFsRegtest:
     """This program performs a couple of regression tests against the
     openSUSE OBS instance which is publicly accessible."""
 

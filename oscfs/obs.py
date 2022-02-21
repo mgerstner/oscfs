@@ -13,7 +13,7 @@ import datetime
 import osc.core
 
 
-class Obs(object):
+class Obs:
     """Wrapper around the osc python module for the purposes of this file
     system."""
 
@@ -322,7 +322,7 @@ class Obs(object):
         return [(f.name, f.mtime, f.size) for f in ret]
 
 
-class CommitInfo(object):
+class CommitInfo:
 
     def __init__(self, revision):
 
@@ -368,7 +368,7 @@ class CommitInfo(object):
         )
 
 
-class InfoBase(object):
+class InfoBase:
 
     def reset(self):
         self.m_title = ""
@@ -600,7 +600,7 @@ class PackageInfo(InfoBase):
                 self.addEnabledBuild(repo, arch)
 
 
-class Repository(object):
+class Repository:
     """Collective meta information about a repository in a
     project/package."""
 
@@ -794,7 +794,7 @@ class ProjectInfo(InfoBase):
         self.m_locked = locked
 
 
-class BuildResultList(object):
+class BuildResultList:
 
     def __init__(self, xml=None):
 
@@ -872,7 +872,7 @@ class BuildResultList(object):
         return ret
 
 
-class BuildResult(object):
+class BuildResult:
 
     def __init__(self, xml_node=None):
         if xml_node:
