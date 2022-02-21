@@ -1,5 +1,4 @@
 # std. modules
-from __future__ import with_statement, print_function
 import datetime
 import time
 import stat
@@ -244,7 +243,7 @@ class FileNode(Node):
         self.m_use_cache = True
 
     def setContent(self, content, date = None):
-        if oscfs.misc.isPython3() and isinstance(content, str):
+        if isinstance(content, str):
             content = content.encode('utf8')
         self.m_content = content
         stat = self.getStat()

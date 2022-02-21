@@ -1,6 +1,3 @@
-# standard modules
-from __future__ import with_statement, print_function
-
 # local modules
 import oscfs.types
 import oscfs.obs

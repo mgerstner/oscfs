@@ -1,6 +1,4 @@
-#!/usr/bin/env python2
-
-from __future__ import with_statement, print_function
+#!/usr/bin/env python3
 
 from setuptools import setup
 import os, sys

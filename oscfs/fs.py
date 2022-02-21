@@ -1,5 +1,3 @@
-from __future__ import with_statement, print_function
-
 # standard modules
 import os
 import sys
@@ -74,12 +72,11 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
         # simply fetch the root entries, this will also benefit the
         # initial access at least. On HTTP 401 this will throw an
         # exception.
-        import oscfs.misc
-        urllib_req = oscfs.misc.importUrllib()
+        import urllib.request
         try:
             prjinfo = self.m_obs.getProjectInfo("openSUSE:Factory")
             return
-        except urllib_req.HTTPError as e:
+        except urllib.request.HTTPError as e:
             if e.code == 401:
                 print(
                     "Authorization at the remote server failed. Please check your ~/.oscrc user/pass settings for API url {}.".format(

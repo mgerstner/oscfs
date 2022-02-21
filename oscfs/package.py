@@ -1,13 +1,9 @@
-# standard modules
-from __future__ import with_statement, print_function
-
 # local modules
 import oscfs.types
 import oscfs.obs
 import oscfs.obsfile
 import oscfs.link
 import oscfs.refreshtrigger
-from oscfs.misc import _unicode
 
 class Package(oscfs.types.DirNode):
     """This type represents a package node of the file system containing
@@ -328,7 +324,7 @@ class RequestNode(oscfs.types.FileNode):
         super(RequestNode, self).__init__(parent, name)
         self.m_req = req
         try:
-            text = _unicode(req).encode('utf8')
+            text = str(req).encode('utf8')
         except UnicodeEncodeError:
             text = "<unicode-error>"
         self.setContent(text, self.getReqModTime())

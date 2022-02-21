@@ -1,7 +1,6 @@
-import oscfs.misc
-
-urllib_req = oscfs.misc.importUrllib()
-http_client = oscfs.misc.importHttplib()
+# std. modules
+import urllib.request
+import http.client
 
 # This urlopen wrapper makes http connection reuse possible.
 #
@@ -36,8 +35,8 @@ class UrlopenWrapper(object):
         self._setupWrapper()
 
     def _setupWrapper(self):
-        self.m_orig_urlopen = urllib_req.urlopen
-        urllib_req.urlopen = self._wrapper
+        self.m_orig_urlopen = urllib.request.urlopen
+        urllib.request.urlopen = self._wrapper
 
     def _wrapper(self, req, data):
         import base64
@@ -81,7 +80,7 @@ class UrlopenWrapper(object):
                     # urllib2.urlopen seems to implicitly
                     # handle this case, so let's do this,
                     # too
-                    raise urllib_req.HTTPError(
+                    raise urllib.request.HTTPError(
                         req.get_full_url(),
                         resp.status,
                         resp.msg,
@@ -90,7 +89,7 @@ class UrlopenWrapper(object):
                     )
 
                 return self._extendedResponse(resp)
-            except http_client.BadStatusLine as e:
+            except http.client.BadStatusLine as e:
                 # probably an http keep-alive issue
                 #
                 # reestablish the connection and retry
@@ -158,9 +157,9 @@ class UrlopenWrapper(object):
         import osc.conf
 
         if proto == "https":
-            Connection = http_client.HTTPSConnection
+            Connection = http.client.HTTPSConnection
         elif proto == "http":
-            Connection = http_client.HTTPConnection
+            Connection = http.client.HTTPConnection
         else:
             raise Exception("Unsupported urlopen protocol " + str(proto))
 

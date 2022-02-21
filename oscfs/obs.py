@@ -1,5 +1,4 @@
 # standard modules
-from __future__ import with_statement, print_function
 from xml.etree import cElementTree as et
 import datetime
 

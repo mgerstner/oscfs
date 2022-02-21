@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from __future__ import with_statement, print_function
 import os, sys
 import argparse
 import subprocess
