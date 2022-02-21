@@ -1,3 +1,21 @@
+0.8.0
+=====
+
+- fix error if a package filename contained the '#' character.
+- fix authentication error detection during startup.
+- enable urlopenwrapper hack again which speeds up consecutive requests
+  drastically.
+- source code ported to Python3 only, removed all Python2 compatibility.
+  Source code is now conforming largely to PIP and flake8 standards.
+
+0.7.2
+=====
+
+- fix error when reading from some "buildlog" nodes that contained non-utf8
+  encoding data.
+- fix problem with grep on larger files, because more data was returned by
+  read() than actually requested when unicode data was involved.
+
 0.7.1
 =====
 
