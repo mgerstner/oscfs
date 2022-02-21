@@ -82,8 +82,6 @@ class OscFsRegtest(object):
             [ self.m_oscfs_bin ] + foreground + args + [ self.m_mnt_dir ],
             close_fds = True,
             shell = False,
-            stdout = subprocess.PIPE,
-            stderr = subprocess.PIPE if stderr_pipe else None
         )
 
         if not foreground:

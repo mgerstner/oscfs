@@ -21,8 +21,6 @@ def getLongDesc():
             return "no long description available"
         subprocess.check_call(
             [ pandoc, "-f", "markdown", "-t", "rst", "-o", "README.rst", "README.md" ],
-            shell = False,
-            close_fds = True
         )
         remove_rst = True
 
