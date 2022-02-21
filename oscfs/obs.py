@@ -3,11 +3,7 @@ from xml.etree import cElementTree as et
 import datetime
 
 # urllib2 replacement, needs to be imported before osc.core
-#
-# for some reason in Python3 the ulropenwrapper with reusing connections is 3
-# times slower than using urllib without reusing connections. No idea what
-# that is about. Removing the urlopenwrapper hack for the time being.
-#import oscfs.urlopenwrapper
+import oscfs.urlopenwrapper
 
 # third party modules
 import osc.core
