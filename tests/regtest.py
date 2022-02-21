@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 
-import os, sys
 import argparse
-import subprocess
-import signal
-import tempfile
-import time
 import datetime
+import os
+import signal
+import subprocess
+import sys
+import tempfile
+
 
 def eprint(*args, **kwargs):
-
     kwargs["file"] = sys.stderr
     print(*args, **kwargs)
+
 
 def fprint(*args, **kwargs):
     kwargs['flush'] = True
     print(*args, **kwargs)
+
 
 class OscFsRegtest(object):
     """This program performs a couple of regression tests against the
@@ -24,7 +26,7 @@ class OscFsRegtest(object):
     def __init__(self):
 
         self.m_parser = argparse.ArgumentParser(
-            description = "Regression tests for oscfs"
+            description="Regression tests for oscfs"
         )
 
         self.m_api_url = "https://api.opensuse.org"
@@ -34,9 +36,7 @@ class OscFsRegtest(object):
 
         import osc.conf
         # determines the active oscrc configuration file
-        self.m_oscrc_config = os.path.expanduser(
-                osc.conf.identify_conf()
-        )
+        self.m_oscrc_config = os.path.expanduser(osc.conf.identify_conf())
 
     def _lookupOscFsBin(self):
 
@@ -53,7 +53,7 @@ class OscFsRegtest(object):
 
     def _setupMountDir(self):
 
-        self.m_mnt_dir = tempfile.mkdtemp(prefix = "oscfs-regtest-")
+        self.m_mnt_dir = tempfile.mkdtemp(prefix="oscfs-regtest-")
 
     def _cleanupMountDir(self):
 
@@ -72,16 +72,16 @@ class OscFsRegtest(object):
         back_config = self.m_oscrc_config + ".back"
         os.rename(back_config, self.m_oscrc_config)
 
-    def mount(self, args = [], foreground = True, stderr_pipe = False):
+    def mount(self, args=[], foreground=True, stderr_pipe=False):
 
         # first umount previous instance, if necessary
         self.umount()
         foreground = ["-f"] if foreground else []
 
         self.m_oscfs_proc = subprocess.Popen(
-            [ self.m_oscfs_bin ] + foreground + args + [ self.m_mnt_dir ],
-            close_fds = True,
-            shell = False,
+            [self.m_oscfs_bin] + foreground + args + [self.m_mnt_dir],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE if stderr_pipe else None
         )
 
         if not foreground:
@@ -136,7 +136,7 @@ class OscFsRegtest(object):
             maint_dirs = set()
             for d in top_dirs:
                 if d.startswith("home:"):
-                    home_users.add( d.split(':')[1] )
+                    home_users.add(d.split(':')[1])
 
                     if not homes and len(home_users) > 1:
                         raise Exception("mounted without --homes but found more than one user's home project")
@@ -177,10 +177,10 @@ class OscFsRegtest(object):
         test_package = os.path.join(self.m_mnt_dir, "openSUSE:Factory", "zlib")
 
         def doWalk(label, cmp_fnc):
-            print("Testing", label, "... ", end = '')
+            print("Testing", label, "... ", end='')
             sys.stdout.flush()
             start = datetime.datetime.now()
-            for root, dirs, files in os.walk( test_package ):
+            for root, dirs, files in os.walk(test_package):
                 pass
             end = datetime.datetime.now()
             diff = end - start
@@ -205,22 +205,17 @@ class OscFsRegtest(object):
 
         self._moveOscConfig()
 
-        MIN_CONFIG = """
-[general]
-apiurl = {url}
-
-[{url}]
-user={user}
-pass={_pass}
-"""
-
         with open(self.m_oscrc_config, 'w') as oscrc:
-            print(MIN_CONFIG.format(
-                    url = self.m_api_url,
-                    user = "somebody",
-                    _pass = "somepass"
-                ), file = oscrc
-            )
+            print(
+                f"""
+[general]
+apiurl = {self.m_api_url}
+
+[{self.m_api_url}]
+user=somebody
+pass=somepass
+""",
+                file=oscrc)
 
         # this is actually more complex, osc chokes on various other
         # conditions like config file not being there, config for apiurl
@@ -231,7 +226,7 @@ pass={_pass}
         try:
             print("Testing for early authentication error")
             # temporarily remove any osc authentication
-            self.mount(foreground = False, stderr_pipe = True)
+            self.mount(foreground=False, stderr_pipe=True)
 
             found_auth_error = False
 
@@ -272,10 +267,10 @@ pass={_pass}
             self.umount()
             self._cleanupMountDir()
 
+
 osc_fs_regtest = OscFsRegtest()
 try:
     osc_fs_regtest.run()
 except Exception as e:
     eprint("Error:", e)
     sys.exit(1)
-

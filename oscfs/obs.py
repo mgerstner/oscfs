@@ -12,6 +12,7 @@ import datetime
 # third party modules
 import osc.core
 
+
 class Obs(object):
     """Wrapper around the osc python module for the purposes of this file
     system."""
@@ -28,7 +29,7 @@ class Obs(object):
         except osc.oscerr.NoConfigfile:
             raise Exception("No .oscrc config file found. Please configure OSC first.")
         except osc.oscerr.ConfigError as e:
-            raise Exception("No valid configuration found in .oscrc: {}. Please configure OSC first.".format(str(e)))
+            raise Exception(f"No valid configuration found in .oscrc: {e}. Please configure OSC first.")
 
         osc.conf.config["apiurl"] = apiurl
 
@@ -65,19 +66,19 @@ class Obs(object):
 
         return ret
 
-    def _getPackageFileTree(self, project, package, revision = None):
+    def _getPackageFileTree(self, project, package, revision=None):
         xml = osc.core.show_files_meta(
             self.m_apiurl,
             project,
             package,
-            revision = revision,
-            meta = False
+            revision=revision,
+            meta=False
         )
 
         tree = et.fromstring(xml)
         return tree
 
-    def getPackageFileList(self, project, package, revision = None):
+    def getPackageFileList(self, project, package, revision=None):
         """Returns a list of the files belonging to a package. The
         list is comprised of tuples of the form (name, size,
         modtime)."""
@@ -85,7 +86,7 @@ class Obs(object):
         tree = self._getPackageFileTree(
             project,
             package,
-            revision = revision
+            revision=revision
         )
         ret = []
 
@@ -125,11 +126,11 @@ class Obs(object):
             size = int(attrs["size"])
             mtime = int(attrs["mtime"])
             link = link_target if is_link else None
-            ret.append( (ft, name, size, mtime, link) )
+            ret.append((ft, name, size, mtime, link))
 
         return ret
 
-    def getPackageRequestList(self, project, package, states = None):
+    def getPackageRequestList(self, project, package, states=None):
         """Returns a list of osc.core.Request instances representing
         the existing requests for the given project/package.
 
@@ -141,11 +142,11 @@ class Obs(object):
             self.m_apiurl,
             project,
             package,
-            req_state = states if states else ['all'],
-            withfullhistory = True
+            req_state=states if states else ['all'],
+            withfullhistory=True
         )
 
-    def getSourceFileContent(self, project, package, _file, revision = None):
+    def getSourceFileContent(self, project, package, _file, revision=None):
 
         # 'cat' is surprisingly difficult ... approach taken by the
         # 'osc cat' command line logic.
@@ -167,18 +168,18 @@ class Obs(object):
         comps = ['build', project, repo, arch, package, _file]
         return self._download(comps)
 
-    def _download(self, urlcomps, query = dict()):
+    def _download(self, urlcomps, query=dict()):
 
         import urllib.parse
         # makeurl below doesn't urlencode the actual url components, only the
         # query parameters. This breaks certain file names that e.g. contain
         # '#'. So let's explicitly urlencode them.
-        urlcomps = [ urllib.parse.quote_plus(comp) for comp in urlcomps ]
+        urlcomps = [urllib.parse.quote_plus(comp) for comp in urlcomps]
 
         url = osc.core.makeurl(
             self.m_apiurl,
             urlcomps,
-            query = query
+            query=query
         )
 
         f = osc.core.http_GET(url)
@@ -195,7 +196,7 @@ class Obs(object):
             project,
             package,
             None,
-            format = fmt
+            format=fmt
         )
 
     def getCommitLog(self, project, package):
@@ -237,7 +238,7 @@ class Obs(object):
 
         return sorted(
             ret,
-            key = lambda r: r.getRevision()
+            key=lambda r: r.getRevision()
         )
 
     def getPackageMeta(self, project, package):
@@ -264,12 +265,12 @@ class Obs(object):
         configured at all or currently in wait state. It can also be
         partial if building is currently in progress."""
 
-        url = '/'.join( [
+        url = '/'.join([
             self.m_apiurl,
             "build",
             project, repo, arch, package,
             "_log?start=0&nostream=1"
-        ] )
+        ])
 
         ret = b""
 
@@ -281,7 +282,7 @@ class Obs(object):
 
         return ret
 
-    def getBuildResultsMeta(self, project, package, repo = [], arch = []):
+    def getBuildResultsMeta(self, project, package, repo=[], arch=[]):
         """Returns XML data describing the build status of the given
         project/package combination. If repo and arch are given then
         only the status of the given build configuration is returned,
@@ -294,7 +295,7 @@ class Obs(object):
 
         xml_lines = osc.core.show_results_meta(
             self.m_apiurl, project, package,
-            repository = repo, arch = arch
+            repository=repo, arch=arch
         )
 
         return '\n'.join([line.decode() for line in xml_lines])
@@ -315,10 +316,11 @@ class Obs(object):
         # when passing Verbose we get File object with metadata back
         ret = osc.core.get_binarylist(
             self.m_apiurl, project, repo, arch, package,
-            verbose = True
+            verbose=True
         )
 
-        return [ (f.name, f.mtime, f.size) for f in ret ]
+        return [(f.name, f.mtime, f.size) for f in ret]
+
 
 class CommitInfo(object):
 
@@ -365,6 +367,7 @@ class CommitInfo(object):
             self.getReqId()
         )
 
+
 class InfoBase(object):
 
     def reset(self):
@@ -377,7 +380,7 @@ class InfoBase(object):
         self.m_name = ""
 
     def setTitle(self, title):
-        self.m_title = title if title != None else ""
+        self.m_title = title if title else ""
 
     def getTitle(self):
         return self.m_title
@@ -389,7 +392,7 @@ class InfoBase(object):
         self.m_name = name
 
     def setDesc(self, desc):
-        self.m_desc = desc if desc != None else ""
+        self.m_desc = desc if desc else ""
 
     def getDesc(self):
         return self.m_desc
@@ -445,7 +448,7 @@ class InfoBase(object):
         elif el.tag == "group":
             role = el.attrib["role"]
             group = el.attrib["groupid"]
-            group = "@{}".format(group)
+            group = f"@{group}"
             self._addRole(group, role)
         elif el.tag == "devel":
             project = el.attrib["project"]
@@ -455,10 +458,11 @@ class InfoBase(object):
 
         return True
 
+
 class PackageInfo(InfoBase):
     """Collective meta information about a package."""
 
-    def __init__(self, meta_xml = None):
+    def __init__(self, meta_xml=None):
         if meta_xml:
             self.parse(meta_xml)
         else:
@@ -537,7 +541,7 @@ class PackageInfo(InfoBase):
 
         prefix = parts[0]
 
-        return "{}:Maintenance:{}".format(prefix, incident)
+        return f"{prefix}:Maintenance:{incident}"
 
     def getAllActiveRepos(self, project_info):
         """Returns a list of all (repository, arch) tuples for which
@@ -557,7 +561,7 @@ class PackageInfo(InfoBase):
             archs = repo.getArchs()
 
             for arch in archs:
-                ret.append( (repo.getName(), arch) )
+                ret.append((repo.getName(), arch))
 
         return ret
 
@@ -585,7 +589,7 @@ class PackageInfo(InfoBase):
                 repo = child.attrib.get("repository", None)
                 arch = child.attrib.get("arch", None)
                 if repo or arch:
-                    self.addDisabledBuild(repo,arch)
+                    self.addDisabledBuild(repo, arch)
                 else:
                     # this is "<disable/>"
                     self.setAllDisabled(True)
@@ -594,6 +598,7 @@ class PackageInfo(InfoBase):
                 repo = child.attrib.get("repository", None)
                 arch = child.attrib.get("arch", None)
                 self.addEnabledBuild(repo, arch)
+
 
 class Repository(object):
     """Collective meta information about a repository in a
@@ -673,10 +678,11 @@ class Repository(object):
     def setEnabled(self, on_off):
         self.m_enabled = on_off
 
+
 class ProjectInfo(InfoBase):
     """Collective meta information about a project."""
 
-    def __init__(self, meta_xml = None):
+    def __init__(self, meta_xml=None):
         if meta_xml:
             self.parse(meta_xml)
         else:
@@ -684,7 +690,7 @@ class ProjectInfo(InfoBase):
 
     def __str__(self):
 
-        ret = "Project Info for {}:\n".format(self.getName())
+        ret = f"Project Info for {self.getName()}:\n"
 
         ret += "all disabled = " + self.getAllDisabled() + "\n"
 
@@ -787,9 +793,10 @@ class ProjectInfo(InfoBase):
     def setLocked(self, locked):
         self.m_locked = locked
 
+
 class BuildResultList(object):
 
-    def __init__(self, xml = None):
+    def __init__(self, xml=None):
 
         if xml:
             self.parse(xml)
@@ -813,14 +820,12 @@ class BuildResultList(object):
         tree = et.fromstring(xml)
 
         if tree.tag != "resultlist":
-            raise Exception(
-                "Getting build results failed:\n{}".format(xml)
-            )
+            raise Exception(f"Getting build results failed:\n{xml}")
 
         self.m_checksum = tree.attrib.get("state", "")
 
         for el in tree:
-            self.m_results.append( BuildResult(el) )
+            self.m_results.append(BuildResult(el))
 
     def getResults(self):
         return self.m_results
@@ -854,7 +859,7 @@ class BuildResultList(object):
         max_cols = []
 
         for i in range(num_cols):
-            maxlen = max( [ len(row[i]) for row in rows ] )
+            maxlen = max([len(row[i]) for row in rows])
             max_cols.append(maxlen + 1)
 
         ret = ""
@@ -869,7 +874,7 @@ class BuildResultList(object):
 
 class BuildResult(object):
 
-    def __init__(self, xml_node = None):
+    def __init__(self, xml_node=None):
         if xml_node:
             self.parse(xml_node)
         else:
@@ -933,4 +938,3 @@ class BuildResult(object):
                 continue
 
             self.m_packages.append((pkg, code))
-

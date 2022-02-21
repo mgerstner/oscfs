@@ -1,10 +1,9 @@
-# standard modules
 import os
 
-# local modules
 import oscfs.types
 import oscfs.obs
 import oscfs.project
+
 
 class Root(oscfs.types.DirNode):
     """This type represents the root node of the file system containing
@@ -15,7 +14,7 @@ class Root(oscfs.types.DirNode):
 
     def __init__(self, obs, args):
 
-        super(Root, self).__init__(None, name = "/")
+        super(Root, self).__init__(None, name="/")
 
         self.m_obs = obs
         self.m_args = args
@@ -71,4 +70,3 @@ class Root(oscfs.types.DirNode):
             )
 
         self.setCacheFresh()
-

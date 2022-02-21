@@ -1,8 +1,7 @@
-# standard modules
 import os
 
-# local modules
 import oscfs.types
+
 
 class Link(oscfs.types.Node):
     """This type represents a symlink in an OBS package which can
@@ -22,5 +21,3 @@ class Link(oscfs.types.Node):
     def readlink(self):
 
         return self.m_target
-
-

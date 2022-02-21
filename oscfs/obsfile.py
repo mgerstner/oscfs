@@ -1,11 +1,11 @@
-# local modules
 import oscfs.types
+
 
 class ObsFile(oscfs.types.Node):
     """This type represents a regular file in an OBS package which can
     return actual file content via read()."""
 
-    def __init__(self, parent, name, size, mtime, revision = None):
+    def __init__(self, parent, name, size, mtime, revision=None):
 
         super(ObsFile, self).__init__(parent, name)
         self.m_revision = revision
@@ -22,12 +22,11 @@ class ObsFile(oscfs.types.Node):
             self.getProject().getName(),
             self.getPackage().getName(),
             self.getName(),
-            revision = self.m_revision
+            revision=self.m_revision
         )
 
     def read(self, length, offset):
 
         self.updateIfNeeded()
 
-        return self.m_data[offset:offset+length]
-
+        return self.m_data[offset:offset + length]

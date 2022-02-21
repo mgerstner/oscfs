@@ -11,14 +11,14 @@ import fuse
 # local modules
 import oscfs.misc
 
-class FileType(object):
 
+class FileType(object):
     regular = 1
     directory = 2
     symlink = 4
 
-class Stat(object):
 
+class Stat(object):
     start_time = datetime.datetime.now()
 
     def __init__(self):
@@ -94,6 +94,7 @@ class Stat(object):
     def isWriteable(self):
         return (self.st_mode & stat.S_IWUSR) != 0
 
+
 class Node(object):
     """Generic file node type which needs to be specialized for regular
     files, directories et al.
@@ -104,9 +105,9 @@ class Node(object):
     Also the Stat information is kept in this base class.
     """
 
-    max_cache_time = datetime.timedelta(minutes = 60)
+    max_cache_time = datetime.timedelta(minutes=60)
 
-    def __init__(self, parent, name, _type = FileType.regular):
+    def __init__(self, parent, name, _type=FileType.regular):
 
         self.m_stat = Stat()
         self.m_name = name
@@ -117,7 +118,7 @@ class Node(object):
 
     @classmethod
     def setMaxCacheTime(cls, seconds):
-        cls.max_cache_time = datetime.timedelta(seconds = seconds)
+        cls.max_cache_time = datetime.timedelta(seconds=seconds)
 
     def getStat(self):
         return self.m_stat
@@ -136,7 +137,7 @@ class Node(object):
         return age > Node.max_cache_time
 
     def wasEverUpdated(self):
-        return self.m_last_updated != None
+        return self.m_last_updated is not None
 
     def setCacheFresh(self):
         self.m_last_updated = datetime.datetime.now()
@@ -173,7 +174,7 @@ class Node(object):
     def isRoot(self):
         """Returns whether this node is the root node of the file
         system."""
-        return self.m_parent == None
+        return self.m_parent is not None
 
     def getRoot(self):
         """Returns the root node of the file system."""
@@ -195,8 +196,10 @@ class Node(object):
         """Returns the package node the current node belongs to."""
         import oscfs.package
 
-        ret = self if isinstance(self, oscfs.package.Package) else \
-                self._findParent(oscfs.package.Package)
+        if isinstance(self, oscfs.package.Package):
+            ret = self
+        else:
+            ret = self._findParent(oscfs.package.Package)
 
         while True:
             # in case of nested paths like
@@ -224,10 +227,10 @@ class Node(object):
                 print("Failed to update {}: {}".format(
                     self.getName(),
                     oscfs.misc.getFriendlyException(e),
-                    file = sys.stderr
-                ))
+                ), file=sys.stderr)
                 raise fuse.FuseOSError(errno.EFAULT)
             self.setCacheFresh()
+
 
 class FileNode(Node):
     """Specialized Node type for read-only regular files. Implementations
@@ -242,7 +245,7 @@ class FileNode(Node):
         self.m_content = None
         self.m_use_cache = True
 
-    def setContent(self, content, date = None):
+    def setContent(self, content, date=None):
         if isinstance(content, str):
             content = content.encode('utf8')
         self.m_content = content
@@ -262,9 +265,10 @@ class FileNode(Node):
         if self.m_content is None or not self.m_use_cache:
             self.fetchContent()
 
-        ret = self.m_content[offset:offset+length]
+        ret = self.m_content[offset:offset + length]
 
         return ret
+
 
 class TriggerNode(Node):
     """Specialized Node type for writable pseudo files. It expects a
@@ -300,6 +304,7 @@ class TriggerNode(Node):
 
         return len(data)
 
+
 class DirNode(Node):
     """Specialized Node type for directories. This type introduces a
     dictionary of name -> Node mappings."""
@@ -309,7 +314,7 @@ class DirNode(Node):
         super(DirNode, self).__init__(
             parent,
             name,
-            _type = FileType.directory
+            _type=FileType.directory
         )
         # correct link count for directories
         self.getStat().setLinks(2)
@@ -339,6 +344,7 @@ class DirNode(Node):
         for entry in self.m_entries.values():
             entry.setCacheStale()
 
+
 class PlainDirNode(DirNode):
     """Specialized DirNode that doesn't implement its own update logic.
     This type of dir can be used to implement subdirs that shouldn't act
@@ -351,4 +357,3 @@ class PlainDirNode(DirNode):
 
     def update(self):
         pass
-

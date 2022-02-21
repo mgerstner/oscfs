@@ -1,10 +1,11 @@
-import os, sys
+import os
+import sys
 
 our_uid = None
 our_gid = None
 
-def getUid():
 
+def getUid():
     global our_uid
 
     if our_uid is None:
@@ -12,14 +13,15 @@ def getUid():
 
     return our_uid
 
-def getGid():
 
+def getGid():
     global our_gid
 
     if our_gid is None:
         our_gid = os.getgid()
 
     return our_gid
+
 
 def getFriendlyException(ex):
     """Returns a friendly description of the currently active exception
@@ -28,11 +30,11 @@ def getFriendlyException(ex):
     import traceback
 
     _, _, tb = sys.exc_info()
-    fn, ln, _, _ = frame = traceback.extract_tb(tb)[-1]
+    fn, ln, _, _ = traceback.extract_tb(tb)[-1]
     return "Exception in {}:{}: {}".format(fn, ln, str(ex))
+
 
 def printException(ex):
     """Prints the currently active exception in a friendly, compact
     way to stderr."""
-    print(getFriendlyException(ex), file = sys.stderr)
-
+    print(getFriendlyException(ex), file=sys.stderr)

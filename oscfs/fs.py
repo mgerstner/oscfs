@@ -1,15 +1,15 @@
-# standard modules
+import argparse
+import errno
 import os
 import sys
-import errno
-import argparse
 
 # third party modules
 import fuse
 
 # local modules
-import oscfs.root
 import oscfs.obs
+import oscfs.root
+
 
 class OscFs(fuse.LoggingMixIn, fuse.Operations):
     """The main class implementing the fuse operations and python-fuse
@@ -29,42 +29,42 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
     def _setupParser(self):
 
         self.m_parser = argparse.ArgumentParser(
-            description = "SUSE open build service file system"
+            description="SUSE open build service file system"
         )
 
         self.m_parser.add_argument(
-            "-f", action = 'store_true',
-            help = "Run the file system in the foreground"
+            "-f", action='store_true',
+            help="Run the file system in the foreground"
         )
         self.m_parser.add_argument(
-            "--apiurl", type = str, default = self.m_default_url,
-            help = "The API URL of the OBS instance. openSUSE build service is used by default"
+            "--apiurl", type=str, default=self.m_default_url,
+            help="The API URL of the OBS instance. openSUSE build service is used by default"
         )
         self.m_parser.add_argument(
-            "--homes", action = 'store_true',
-            help = "If set then home projects will be included which is not the default"
+            "--homes", action='store_true',
+            help="If set then home projects will be included which is not the default"
         )
         self.m_parser.add_argument(
-            "--maintenance", action = 'store_true',
-            help = "If set then maintenance projects will be included which is not the default"
+            "--maintenance", action='store_true',
+            help="If set then maintenance projects will be included which is not the default"
         )
         self.m_parser.add_argument(
-            "--ptf", action = 'store_true',
-            help = "If set then PTF projects will be included which is not the default"
+            "--ptf", action='store_true',
+            help="If set then PTF projects will be included which is not the default"
         )
         self.m_parser.add_argument(
-            "mountpoint", type = str,
-            help = "Path where to mount the file system"
+            "mountpoint", type=str,
+            help="Path where to mount the file system"
         )
 
+        CACHE_SECS = oscfs.types.Node.max_cache_time.seconds
+
         self.m_parser.add_argument(
-            "--cache-time", type = int,
-            default = None,
-            help = """Specifies the time in seconds the contents
-                of the file system will be cached. Default: {}
-                seconds. Set to zero to disable caching.""".format(
-                    oscfs.types.Node.max_cache_time.seconds
-            )
+            "--cache-time", type=int,
+            default=None,
+            help=f"""Specifies the time in seconds the contents
+                of the file system will be cached. Default: {CACHE_SECS}
+                seconds. Set to zero to disable caching."""
         )
 
     def _checkAuth(self):
@@ -74,7 +74,7 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
         # exception.
         import urllib.request
         try:
-            prjinfo = self.m_obs.getProjectInfo("openSUSE:Factory")
+            _ = self.m_obs.getProjectInfo("openSUSE:Factory")
             return
         except urllib.request.HTTPError as e:
             if e.code == 401:
@@ -82,7 +82,7 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
                     "Authorization at the remote server failed. Please check your ~/.oscrc user/pass settings for API url {}.".format(
                         self.m_args.apiurl
                     ),
-                    file = sys.stderr
+                    file=sys.stderr
                 )
             elif e.code == 404:
                 # authorization worked but the project is not there, also fine
@@ -93,15 +93,15 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
         except Exception as e:
             print(
                 "Accessing the remote server failed:",
-                e, file = sys.stderr
+                e, file=sys.stderr
             )
             raise
 
         sys.exit(1)
 
-    def _getNode(self, path, fh = None):
+    def _getNode(self, path, fh=None):
 
-        if fh != None:
+        if fh is not None:
             return self._getFileHandle(fh)
         else:
             try:
@@ -114,7 +114,7 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
         self.m_args = self.m_parser.parse_args()
         self.m_obs.configure(self.m_args.apiurl)
         self.m_root = oscfs.root.Root(self.m_obs, self.m_args)
-        if self.m_args.cache_time != None:
+        if self.m_args.cache_time is not None:
             oscfs.types.Node.setMaxCacheTime(self.m_args.cache_time)
 
         self._checkAuth()
@@ -122,13 +122,13 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
         fuse.FUSE(
             self,
             self.m_args.mountpoint,
-            foreground = self.m_args.f,
-            nothreads = True,
+            foreground=self.m_args.f,
+            nothreads=True,
             # direct_io is necessary in our use case to avoid
             # caching in the kernel and support dynamically
             # determined file contents
-            direct_io = True,
-            nonempty = True
+            direct_io=True,
+            nonempty=True
         )
 
     def init(self, path):
@@ -142,7 +142,7 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 
     # global file system methods
 
-    def getattr(self, path, fh = None):
+    def getattr(self, path, fh=None):
 
         node = self._getNode(path, fh)
 
@@ -150,7 +150,7 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 
         return ret.toDict()
 
-    def readdir(self, path, fh = None):
+    def readdir(self, path, fh=None):
 
         node = self._getNode(path, fh)
 
@@ -171,7 +171,7 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 
         fd = self.m_free_handles.pop(0)
 
-        if self.m_handles[fd] != None:
+        if self.m_handles[fd] is not None:
             raise Exception("Handle allocation inconsistency")
 
         self.m_handles[fd] = node
@@ -194,15 +194,15 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 
     def release(self, path, fh):
 
-        if fh != None:
+        if fh is not None:
             self._freeFileHandle(fh)
 
     def releasedir(self, path, fh):
 
-        if fh != None:
+        if fh is not None:
             self._freeFileHandle(fh)
 
-    def truncate(self, path, length, fh = None):
+    def truncate(self, path, length, fh=None):
 
         node = self._getNode(path, fh)
         if node.getStat().isWriteable():
@@ -239,4 +239,3 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
         node = self._getNode(path, fh)
 
         return node.write(data, offset)
-

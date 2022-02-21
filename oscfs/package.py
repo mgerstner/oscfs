@@ -1,16 +1,16 @@
-# local modules
 import oscfs.types
 import oscfs.obs
 import oscfs.obsfile
 import oscfs.link
 import oscfs.refreshtrigger
 
+
 class Package(oscfs.types.DirNode):
     """This type represents a package node of the file system containing
     all package files and metadata as files.
     """
 
-    def __init__(self, parent, name, project, package, revision = None):
+    def __init__(self, parent, name, project, package, revision=None):
 
         super(Package, self).__init__(parent, name)
         self.m_revision = revision
@@ -62,12 +62,12 @@ class Package(oscfs.types.DirNode):
 
         for ft, name, size, mtime, target in obs.getPackageFileList(
             self.getProject().getName(), self.m_package,
-            revision = self.m_revision
+            revision=self.m_revision
         ):
             if ft == types.regular:
                 node = oscfs.obsfile.ObsFile(
                     self, name, size, mtime,
-                    revision = self.m_revision
+                    revision=self.m_revision
                 )
             elif ft == types.symlink:
                 node = oscfs.link.Link(self, name, target)
@@ -97,6 +97,7 @@ class Package(oscfs.types.DirNode):
             # only add the API dir for the current version of the
             # package, the pkg meta data is not versioned.
             self._addApiDir()
+
 
 class PkgApiDir(oscfs.types.DirNode):
     """This type provides access to additional meta data for a package.
@@ -179,12 +180,8 @@ class PkgApiDir(oscfs.types.DirNode):
         devel_proj = self.getPkgInfo().getDevelProject()
         if devel_proj:
             devel_link = "develproject"
-            target = "{}/{}".format(
-                    devel_proj,
-                    self.getPackage().getName()
-            )
-            self.m_entries[devel_link] = \
-                oscfs.link.Link(self, devel_link, target)
+            target = f"{devel_proj}/{self.getPackage().getName()}"
+            self.m_entries[devel_link] = oscfs.link.Link(self, devel_link, target)
 
         prj_info = self.getProject().getApiDir().getPrjInfo()
         incident = self.getPkgInfo().getMaintenanceIncident(prj_info)
@@ -194,8 +191,8 @@ class PkgApiDir(oscfs.types.DirNode):
             # package was built
             incident_link = "incident"
             target = incident
-            self.m_entries[incident_link] = \
-                oscfs.link.Link(self, incident_link, target)
+            self.m_entries[incident_link] = oscfs.link.Link(self, incident_link, target)
+
 
 class CommitsDir(oscfs.types.DirNode):
     """This types provides access to each individual commit for a
@@ -207,14 +204,14 @@ class CommitsDir(oscfs.types.DirNode):
         self.m_package = package
 
     def update(self):
-        package = self.m_package
         infos = self.m_parent.getCachedCommitInfos()
 
         for rev in range(len(infos)):
             info = infos[rev]
 
-            commit = "{}".format(rev+1)
+            commit = "{rev + 1}"
             self.m_entries[commit] = CommitNode(self, info, commit)
+
 
 class RevisionsDir(oscfs.types.DirNode):
     """This type provides access to all revisions that exist for a
@@ -227,16 +224,15 @@ class RevisionsDir(oscfs.types.DirNode):
         self.m_package = package
 
     def update(self):
-        package = self.m_package
-
         for info in self.m_parent.getCachedCommitInfos():
             name = str(info.getRevision())
             self.m_entries[name] = Package(
                 self, name,
-                project = self.getProject().getName(),
-                package = self.getPackage().getName(),
-                revision = info.getRevision()
+                project=self.getProject().getName(),
+                package=self.getPackage().getName(),
+                revision=info.getRevision()
             )
+
 
 class LogNode(oscfs.types.FileNode):
     """This node type contains the commit log for the package it resides
@@ -262,6 +258,7 @@ class LogNode(oscfs.types.FileNode):
 
         return log
 
+
 class NumRevisionsNode(oscfs.types.FileNode):
     """This node type contains the number of commits for the package it
     resides in."""
@@ -277,8 +274,6 @@ class NumRevisionsNode(oscfs.types.FileNode):
         self.setContent(self.m_revisions)
 
     def fetchRevisions(self):
-
-        package = self.m_package
         infos = self.m_parent.getCachedCommitInfos()
 
         return str(len(infos))
@@ -305,16 +300,17 @@ class CommitNode(oscfs.types.FileNode):
     def buildCommit(self):
 
         ret = "revision {r} | {user} | {date} | {req}\n".format(
-            r = self.m_info.getRevision(),
-            user = self.m_info.getAuthor(),
-            date = self.m_info.getDate().strftime("%X %x"),
-            req = self.m_info.getReqId()
+            r=self.m_info.getRevision(),
+            user=self.m_info.getAuthor(),
+            date=self.m_info.getDate().strftime("%X %x"),
+            req=self.m_info.getReqId()
         )
 
         ret += "-" * (len(ret) - 1)
         ret += "\n"
         ret += self.m_info.getMessage()
         return ret
+
 
 class RequestNode(oscfs.types.FileNode):
     """This node contains the specific request info for a request."""
@@ -341,6 +337,7 @@ class RequestNode(oscfs.types.FileNode):
         )
         return dt
 
+
 class RequestsDir(oscfs.types.DirNode):
     """This type provides access to all requests that exist for a
     package. It allows to inspect individual requests directly."""
@@ -354,11 +351,12 @@ class RequestsDir(oscfs.types.DirNode):
         obs = self.getRoot().getObs()
 
         for req in obs.getPackageRequestList(
-                project = self.getProject().getName(),
-                package = self.getPackage().getName()
+                project=self.getProject().getName(),
+                package=self.getPackage().getName()
         ):
             label = "{}:{}".format(req.reqid, req.state.name)
             self.m_entries[label] = RequestNode(self, req, label)
+
 
 class MetaNode(oscfs.types.FileNode):
     """This node type contains the raw XML metadata of a package."""
@@ -371,6 +369,7 @@ class MetaNode(oscfs.types.FileNode):
     def fetchContent(self):
         meta = self.m_parent.getPkgMeta()
         self.setContent(meta)
+
 
 class DescriptionNode(oscfs.types.FileNode):
     """This node returns a formatted description of the package."""
@@ -399,6 +398,7 @@ class DescriptionNode(oscfs.types.FileNode):
         )
         self.setContent(desc)
 
+
 class MaintainersNode(oscfs.types.FileNode):
     """This node returns a list of maintainers for the package."""
 
@@ -412,6 +412,7 @@ class MaintainersNode(oscfs.types.FileNode):
         maintainers = '\n'.join(pkg_info.getMaintainers())
         self.setContent(maintainers)
 
+
 class BugownersNode(oscfs.types.FileNode):
     """This node returns a list of bugownders for the package."""
 
@@ -424,6 +425,7 @@ class BugownersNode(oscfs.types.FileNode):
         pkg_info = self.m_parent.getPkgInfo()
         bugowners = '\n'.join(pkg_info.getBugowners())
         self.setContent(bugowners)
+
 
 class BuildresultsNode(oscfs.types.FileNode):
     """This node returns a the current build results for configured
@@ -445,6 +447,7 @@ class BuildresultsNode(oscfs.types.FileNode):
 
         content = results.getTable()
         self.setContent(content)
+
 
 class BuildlogNode(oscfs.types.FileNode):
     """This type returns a certain build log for a certain package upon
@@ -486,6 +489,7 @@ class BuildlogNode(oscfs.types.FileNode):
         log = obs.getBuildlog(*args)
         self.setContent(log)
 
+
 class BuildlogsDir(oscfs.types.DirNode):
     """This type provides access to a repository/arch hierarchy that
     allows access to the current build logs of a package."""
@@ -514,6 +518,7 @@ class BuildlogsDir(oscfs.types.DirNode):
                 repo,
                 arch
             )
+
 
 class BinaryFileNode(oscfs.types.FileNode):
     """This type returns a certain binary artifact's data upon read."""
@@ -545,6 +550,7 @@ class BinaryFileNode(oscfs.types.FileNode):
         # caching.
         content = obs.getBinaryFileContent(*args)
         self.setContent(content)
+
 
 class BinariesDir(oscfs.types.DirNode):
     """This type provides access to a repository/arch hierarchy that
@@ -594,4 +600,3 @@ class BinariesDir(oscfs.types.DirNode):
                     arch,
                     binary
                 )
-

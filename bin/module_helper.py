@@ -16,4 +16,5 @@ def tryFindModule(module):
         print("The module %s could not be found in '%s'!" % (module, parent_dir))
         sys.exit(4)
 
+
 tryFindModule("oscfs")

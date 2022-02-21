@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 try:
-    import module_helper
+    import module_helper  # noqa: F401
 except ImportError:
     # if oscfs is normally installed then this is okay
     pass
@@ -10,4 +10,3 @@ import oscfs.misc
 
 the_fs = oscfs.fs.OscFs()
 the_fs.run()
-

@@ -27,6 +27,7 @@ import http.client
 # right approach would, of course, be to implement connection reuse on the osc
 # side instead.
 
+
 class UrlopenWrapper(object):
 
     def __init__(self):
@@ -89,13 +90,11 @@ class UrlopenWrapper(object):
                     )
 
                 return self._extendedResponse(resp)
-            except http.client.BadStatusLine as e:
+            except http.client.BadStatusLine:
                 # probably an http keep-alive issue
                 #
                 # reestablish the connection and retry
-                connection = self._getConnection(
-                    proto, host, renew = True
-                )
+                connection = self._getConnection(proto, host, renew=True)
                 retries += 1
 
                 if retries > 3:
@@ -118,23 +117,16 @@ class UrlopenWrapper(object):
 
         # the urrlib result allows readlines() to be called so we need
         # to cover that, too.
-        resp.readlines = functools.partial(
-            responseReadlines, resp = resp
-        )
+        resp.readlines = functools.partial(responseReadlines, resp=resp)
         # info() on urrlib2 objects returns a HTTPMessage object which
         # we need to emulate
-        resp.info = functools.partial(
-            responseInfo, resp = resp
-        )
+        resp.info = functools.partial(responseInfo, resp=resp)
         # emulate info().get('My-Header') to retrieve headers
-        resp.get = functools.partial(
-            responseGet, resp = resp
-        )
+        resp.get = functools.partial(responseGet, resp=resp)
 
         return resp
 
-    def _getConnection(self, proto, host, renew = False):
-
+    def _getConnection(self, proto, host, renew=False):
         key = (proto, host)
 
         if renew:
@@ -154,8 +146,6 @@ class UrlopenWrapper(object):
         return connection
 
     def setupConnection(self, proto, host):
-        import osc.conf
-
         if proto == "https":
             Connection = http.client.HTTPSConnection
         elif proto == "http":
@@ -167,5 +157,5 @@ class UrlopenWrapper(object):
 
         return connection
 
-urlopen_wrapper = UrlopenWrapper()
 
+urlopen_wrapper = UrlopenWrapper()

@@ -1,8 +1,8 @@
-# local modules
 import oscfs.types
 import oscfs.obs
 import oscfs.package
 import oscfs.refreshtrigger
+
 
 class Project(oscfs.types.DirNode):
     """This type represents a project node of the file system containing
@@ -34,11 +34,12 @@ class Project(oscfs.types.DirNode):
 
             self.m_entries[package] = oscfs.package.Package(
                 self, package,
-                project = self.getName(),
-                package = package
+                project=self.getName(),
+                package=package
             )
 
         self._addApiDir()
+
 
 class PrjApiDir(oscfs.types.DirNode):
     """This type provides access to additional meta data for a project.
@@ -90,6 +91,7 @@ class PrjApiDir(oscfs.types.DirNode):
 
         return oscfs.obs.ProjectInfo(self.getPrjMeta())
 
+
 class MetaNode(oscfs.types.FileNode):
     """This node type contains the raw XML metadata of a project."""
 
@@ -100,6 +102,7 @@ class MetaNode(oscfs.types.FileNode):
 
         meta = self.m_parent.getPrjMeta()
         self.setContent(meta)
+
 
 class ReadersNode(oscfs.types.FileNode):
     """This node returns a list of reader accounts for the project."""
@@ -113,6 +116,7 @@ class ReadersNode(oscfs.types.FileNode):
         readers = '\n'.join(prj_info.getReaders())
         self.setContent(readers)
 
+
 class MaintainersNode(oscfs.types.FileNode):
     """This node returns a list of maintainers for the project."""
 
@@ -124,6 +128,7 @@ class MaintainersNode(oscfs.types.FileNode):
         prj_info = self.m_parent.getPrjInfo()
         maintainers = '\n'.join(prj_info.getMaintainers())
         self.setContent(maintainers)
+
 
 class BugownersNode(oscfs.types.FileNode):
     """This node returns a list of bugowners for the project."""
@@ -137,6 +142,7 @@ class BugownersNode(oscfs.types.FileNode):
         bugowners = '\n'.join(prj_info.getBugowners())
         self.setContent(bugowners)
 
+
 class DebuginfoNode(oscfs.types.FileNode):
     """This node contains a boolean 0/1 value for representing the
     debuginfo setting of the project."""
@@ -148,6 +154,7 @@ class DebuginfoNode(oscfs.types.FileNode):
         prj_info = self.m_parent.getPrjInfo()
         self.setBoolean(prj_info.getDebuginfoEnabled())
 
+
 class LockedNode(oscfs.types.FileNode):
     """This node contains a boolean 0/1 value for representing the
     locked status of the project."""
@@ -158,6 +165,7 @@ class LockedNode(oscfs.types.FileNode):
 
         prj_info = self.m_parent.getPrjInfo()
         self.setBoolean(prj_info.getLocked())
+
 
 class RepositoriesNode(oscfs.types.FileNode):
     """This node contains a list of the available repositories for the
@@ -204,4 +212,3 @@ class RepositoriesNode(oscfs.types.FileNode):
                 content += "\n"
 
         self.setContent(content)
-
