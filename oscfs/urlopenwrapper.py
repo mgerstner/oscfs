@@ -39,7 +39,7 @@ class UrlopenWrapper:
         self.m_orig_urlopen = urllib.request.urlopen
         urllib.request.urlopen = self._wrapper
 
-    def _wrapper(self, req, data):
+    def _wrapper(self, req, data=None):
         import base64
         import osc.conf
 
