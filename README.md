@@ -4,19 +4,18 @@
 
 *oscfs* is a FUSE based user space file system that allows to access open
 build service (OBS) instances. It is based on the *osc* (openSUSE Commander)
-python package for interfacing with OBS. At the moment it provides read-only
+Python package for interfacing with OBS. At the moment it provides read-only
 access for inspecting packages and their metadata.
 
 # Dependencies
 
-*oscfs* itself is implemented in python and uses the *fusepy* module to
-implement the file system portion. There is another python fuse package called
+*oscfs* itself is implemented in Python and uses the *fusepy* module to
+implement the file system portion. There is another Python Fuse package called
 *python-fuse* which **is not compatible** with *oscfs*.
 
-For accessing OBS instances the python *osc* module is required.
-
-Currently *oscfs* only works with python2, because the *osc* module is not
-available for python3 at the moment.
+For accessing OBS instances the Python *osc* module is required. The *osc*
+module by now is working with Python3, therefore *oscfs* is no longer
+supporting Python2 since version 0.8.0.
 
 ## Features
 
@@ -29,37 +28,39 @@ available for python3 at the moment.
 
 ## Usage
 
-*oscfs* ships one main script called `oscfs`. It supports a couple of command
+*oscfs* ships a main script called `oscfs`. It supports a couple of command
 line parameters to influence its behaviour. It should only be called by a
 regular user and never by the `root` user.
 
 For mounting the file system simply provide the *mountpoint* argument to the
 `oscfs` main script. By default the openSUSE build service is accessed. For
 authentication at the OBS instance, the configuration file in the home
-directory in `~/.oscrc` needs to be setup. This file is part of the *osc*
-python module for which you can find more documentation in the [openSUSE
+directory in `~/.config/osc/oscrc` (or `~/.oscrc` on older installations)
+needs to be setup. This file is part of the *osc* Python module for which you
+can find more documentation in the [openSUSE
 wiki](https://en.opensuse.org/openSUSE:OSC).
 
-To specify a different OBS instance, provide the URL via the `--apiurl`
+To access a different OBS instance, provide the URL via the `--apiurl`
 parameter. For example to mount the SUSE internal build service (IBS) under
-the home directory in a directory `ibs` use the following command line:
+use a command line like this:
 
 ```sh
 $ oscfs --apiurl https://api.suse.de ~/ibs
 ```
 
-By default `oscfs` detaches and runs in the background. For testing purposes
-it can be run in the foreground by passing the `-f` parameter.
+By default `oscfs` detaches and runs in the background as a daemon. For
+testing purposes it can be run in the foreground by passing the `-f`
+parameter.
 
 Certain special OBS projects are excluded by default like the users' *home:*
 projects, maintenance incident projects or PTF (Program Temporary Fix)
 projects. This is the case, because a lot of these projects can exist in an
-OBS which would clutter the file system contents.
+OBS instance which would clutter the file system contents.
 
 If you want to include these types of projects you can pass the according
-command line parameter like `--homes`, `--maintenance` or `--ptf`. Your own
-home projects will always be included in the file system independently of the
-`--homes` switch.
+command line parameter like `--homes`, `--maintenance` or `--ptf`
+respectively. Your user account's own home projects will always be included in
+the file system independently of the `--homes` switch.
 
 Content that has been fetched from the OBS instance will be cached locally for
 a certain time to improve response times. The time before content will be
@@ -68,7 +69,7 @@ refreshed can be tuned via the `--cache-time` parameter.
 ## File System Structure
 
 On the first level of the file system, a directory for each OBS project is
-found. When working against the openSUSE OBS you can find the
+found. When accessing the openSUSE OBS instance you can find the
 `openSUSE:Factory` directory, for example. On the second level the packages
 within a project are found. Within `openSUSE:Factory` all packages that make
 up the openSUSE Tumbleweed rolling release codebase are found. For example you
@@ -111,7 +112,7 @@ directory:
 - `bugowners`: the same as for projects above.
 - `maintainers`: the same as for projects above.
 - `description`: contains the human readable description of the package.
-- `log`: contains the changelog of the package.
+- `log`: contains the commit changelog of the package.
 - `meta`: returns the complete XML metadata for the package as provided by the
   OBS instance.
 - `num_revisions`: returns an integer denoting the number of commit revisions
@@ -171,6 +172,9 @@ lot amount of data from the remote server should be avoided (e.g. don't call
 `find` for the complete file system). This would be a kind of denial of
 service attack on the remote server.
 
+In a future version of `oscfs` evaluation of remote server modification times
+could be used to transparently update cached data when necessary.
+
 ### Sorting of Directory Contents
 
 Listing directories with `ls` can feel a bit on the slow side, even if data is
@@ -198,7 +202,7 @@ it was last seen by `oscfs`.
 ### Finding Packages
 
 You can find packages by using tools like `find` or shell wildcards expansion.
-To find all fuse related packages you do this for example:
+To find all Fuse related packages you do this for example:
 
 ```sh
 $ cd openSUSE:Factory
@@ -209,7 +213,7 @@ enblend-enfuse  fuse  fuse-exfat  fuseiso  fusepod  fusesmb  ifuse  ldapfuse  li
 ### Matching Lines from RPM Specs
 
 You can query for packages containing certain RPM spec statements. For example
-to find packages that require some perl package by using grep like this:
+to find packages that require some Perl package by using grep like this:
 
 ```sh
 $ cd openSUSE:Factory
