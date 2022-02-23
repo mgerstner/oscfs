@@ -1,3 +1,9 @@
+0.8.1
+=====
+
+- fix minor error in urlopen wrapper occuring in  some Python versions,
+  causing an exception upon start.
+
 0.8.0
 =====
 
