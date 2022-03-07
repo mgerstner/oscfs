@@ -714,6 +714,9 @@ class ProjectInfo(InfoBase):
         self.reset()
         tree = et.fromstring(meta_xml)
 
+        if tree.tag == "status":
+            raise Exception(f"failed to retrieve project info: {tree.attrib['code']}")
+
         name = tree.attrib["name"]
         self.setName(name)
 

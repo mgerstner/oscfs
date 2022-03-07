@@ -91,6 +91,9 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
                 print("HTTP error occured trying to access the remote server:")
                 print(e)
         except Exception as e:
+            if str(e).find("unknown_project") != -1:
+                # 404 on XML level
+                return
             print(
                 "Accessing the remote server failed:",
                 e, file=sys.stderr
