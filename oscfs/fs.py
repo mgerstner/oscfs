@@ -6,6 +6,12 @@ import sys
 # third party modules
 import fuse
 
+# explicitly parse this option since we need to import the wrapper before
+# oscfs.obs is imported
+if "--no-urlopen-wrapper" not in sys.argv:
+    # urllib2 replacement, needs to be imported before osc.core
+    import oscfs.urlopenwrapper
+
 # local modules
 import oscfs.obs
 import oscfs.root
@@ -58,6 +64,10 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
             help="If set then binary files like RPMs and other build artifacts will not be cached. This prevents linearly increasing memory usage in case a lot of these files are accessed over time."
         )
         self.m_parser.add_argument(
+            "--no-urlopen-wrapper", action='store_true',
+            help="Disable use of a hack to replace urllib's urlopen function to improve performance."
+        )
+        self.m_parser.add_argument(
             "mountpoint", type=str,
             help="Path where to mount the file system"
         )
@@ -99,10 +109,7 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
             if str(e).find("unknown_project") != -1:
                 # 404 on XML level
                 return
-            print(
-                "Accessing the remote server failed:",
-                e, file=sys.stderr
-            )
+            print("Accessing the remote server failed:", e, file=sys.stderr)
             raise
 
         sys.exit(1)

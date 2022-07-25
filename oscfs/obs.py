@@ -2,9 +2,6 @@
 from xml.etree import cElementTree as et
 import datetime
 
-# urllib2 replacement, needs to be imported before osc.core
-import oscfs.urlopenwrapper
-
 # third party modules
 import osc.core
 
@@ -21,13 +18,11 @@ class Obs:
         import osc.conf
         self.m_apiurl = apiurl
         try:
-            osc.conf.get_config()
+            osc.conf.get_config(override_apiurl=apiurl)
         except osc.oscerr.NoConfigfile:
             raise Exception("No .oscrc config file found. Please configure OSC first.")
         except osc.oscerr.ConfigError as e:
             raise Exception(f"No valid configuration found in .oscrc: {e}. Please configure OSC first.")
-
-        osc.conf.config["apiurl"] = apiurl
 
     def getUser(self):
         return osc.conf.config["user"]

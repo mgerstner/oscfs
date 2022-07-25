@@ -55,13 +55,25 @@ class UrlopenWrapper:
 
         # add user/password, but only if it's an encrypted connection
         if proto == 'https' and api_conf:
-            userpw = "{}:{}".format(
-                api_conf["user"], api_conf["pass"]
-            )
-            auth = "Basic {}".format(
-                base64.b64encode(userpw.encode()).decode()
-            )
-            req.add_unredirected_header("Authorization", auth)
+            if "sshkey" in api_conf:
+                raise Exception("Cannot use urlopenwrapper hack, because sshkey usage is configured for authentication. Consider using --no-urlopen-wrapper.")
+            else:
+                # the reason that we have to mimic the header authorization
+                # code from the osc module is that the osc module uses a
+                # global urllib2 opener handler mechanism that is pretty
+                # complicated ... normally after getting a HTTP 401 error this
+                # opener handler would only lazily add the required
+                # authorization parameters. I didn't find a simple way to call
+                # into this logic from this wrapper here yet. This also means
+                # that the new SSH key 2 factor authentication breaks when
+                # using this wrapper.
+                userpw = "{}:{}".format(
+                    api_conf["user"], api_conf["pass"]
+                )
+                auth = "Basic {}".format(
+                    base64.b64encode(userpw.encode()).decode()
+                )
+                req.add_unredirected_header("Authorization", auth)
 
         connection = self._getConnection(proto, host)
         retries = 0
