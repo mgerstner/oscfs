@@ -55,7 +55,7 @@ class UrlopenWrapper:
 
         # add user/password, but only if it's an encrypted connection
         if proto == 'https' and api_conf:
-            if "sshkey" in api_conf:
+            if "sshkey" in api_conf and api_conf["sshkey"] is not None:
                 raise Exception("Cannot use urlopenwrapper hack, because sshkey usage is configured for authentication. Consider using --no-urlopen-wrapper.")
             else:
                 # the reason that we have to mimic the header authorization
