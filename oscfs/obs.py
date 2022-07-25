@@ -315,7 +315,8 @@ class Obs:
             verbose=True
         )
 
-        return [(f.name, f.mtime, f.size) for f in ret]
+        # NOTE: this can return None if the size is zero, this is fixing that
+        return [(f.name, f.mtime, 0 if f.size is None else f.size) for f in ret]
 
 
 class CommitInfo:
