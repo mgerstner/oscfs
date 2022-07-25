@@ -70,6 +70,7 @@ class Package(oscfs.types.DirNode):
                     revision=self.m_revision
                 )
             elif ft == types.symlink:
+                target = "../../" + target
                 node = oscfs.link.Link(self, name, target)
             else:
                 raise Exception("Unexpected type")
