@@ -9,6 +9,7 @@ import fuse
 # local modules
 import oscfs.obs
 import oscfs.root
+from oscfs.package import BinaryFileNode
 
 
 class OscFs(fuse.LoggingMixIn, fuse.Operations):
@@ -51,6 +52,10 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
         self.m_parser.add_argument(
             "--ptf", action='store_true',
             help="If set then PTF projects will be included which is not the default"
+        )
+        self.m_parser.add_argument(
+            "--no-bin-cache", action='store_true',
+            help="If set then binary files like RPMs and other build artifacts will not be cached. This prevents linearly increasing memory usage in case a lot of these files are accessed over time."
         )
         self.m_parser.add_argument(
             "mountpoint", type=str,
@@ -119,6 +124,8 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
         self.m_root = oscfs.root.Root(self.m_obs, self.m_args)
         if self.m_args.cache_time is not None:
             oscfs.types.Node.setMaxCacheTime(self.m_args.cache_time)
+        if self.m_args.no_bin_cache:
+            BinaryFileNode.cache_binaries = False
 
         self._checkAuth()
 
@@ -179,10 +186,13 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 
         self.m_handles[fd] = node
 
+        node.incUsers()
+
         return fd
 
     def _freeFileHandle(self, fh):
 
+        self.m_handles[fh].decUsers()
         self.m_handles[fh] = None
         self.m_free_handles.append(fh)
 

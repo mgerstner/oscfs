@@ -115,10 +115,25 @@ class Node:
         self.setType(_type)
         self.m_last_updated = None
         self.m_auto_clear_on_update = True
+        self.m_num_users = 0
 
     @classmethod
     def setMaxCacheTime(cls, seconds):
         cls.max_cache_time = datetime.timedelta(seconds=seconds)
+
+    def incUsers(self):
+        self.m_num_users += 1
+
+    def decUsers(self):
+        self.m_num_users -= 1
+
+        if self.m_num_users == 0:
+            self.noUsersLeft()
+
+    def noUsersLeft(self):
+        """Can be overriden by child classes to react on the last open file
+        description being gone for this node."""
+        pass
 
     def getStat(self):
         return self.m_stat
@@ -254,6 +269,9 @@ class FileNode(Node):
 
         if date:
             stat.setModTime(date)
+
+    def dropCache(self):
+        self.m_content = None
 
     def setUseCache(self, on_off):
         self.m_use_cache = on_off

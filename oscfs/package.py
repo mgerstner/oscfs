@@ -523,6 +523,8 @@ class BuildlogsDir(oscfs.types.DirNode):
 class BinaryFileNode(oscfs.types.FileNode):
     """This type returns a certain binary artifact's data upon read."""
 
+    cache_binaries = True
+
     def __init__(self, parent, project, package, repo, arch, binary):
 
         super(BinaryFileNode, self).__init__(parent, binary[0])
@@ -550,6 +552,10 @@ class BinaryFileNode(oscfs.types.FileNode):
         # caching.
         content = obs.getBinaryFileContent(*args)
         self.setContent(content)
+
+    def noUsersLeft(self):
+        if not self.cache_binaries:
+            self.dropCache()
 
 
 class BinariesDir(oscfs.types.DirNode):
