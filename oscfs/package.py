@@ -70,7 +70,6 @@ class Package(oscfs.types.DirNode):
                     revision=self.m_revision
                 )
             elif ft == types.symlink:
-                target = "../../" + target
                 node = oscfs.link.Link(self, name, target)
             else:
                 raise Exception("Unexpected type")
@@ -210,7 +209,7 @@ class CommitsDir(oscfs.types.DirNode):
         for rev in range(len(infos)):
             info = infos[rev]
 
-            commit = "{rev + 1}"
+            commit = f"{rev + 1}"
             self.m_entries[commit] = CommitNode(self, info, commit)
 
 

@@ -189,7 +189,7 @@ class Node:
     def isRoot(self):
         """Returns whether this node is the root node of the file
         system."""
-        return self.m_parent is not None
+        return self.m_parent is None
 
     def getRoot(self):
         """Returns the root node of the file system."""
