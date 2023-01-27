@@ -104,6 +104,12 @@ class OscFsRegtest:
         # could cause a blocking child process when the pipe is full
         # ...
 
+    def _fuserumount(self):
+        """Uses fusermount to unmount a potential existing oscfs mount. This
+        is useful for background instances of oscfs. Errors are not reported"""
+
+        subprocess.call(["fusermount", "-u", self.m_mnt_dir])
+
     def umount(self):
 
         if not self.m_oscfs_proc:
@@ -248,6 +254,9 @@ pass=somepass
             self.m_oscfs_proc = None
 
             if res != 1 or not found_auth_error:
+                # it seems oscfs runs in the background now, explicitly
+                # unmount via fusermount
+                self._fuserumount()
                 raise Exception("No authentication error code or message was reported: code = {}".format(res))
         finally:
             self._restoreOscConfig()
