@@ -7,6 +7,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 
 
 def eprint(*args, **kwargs):
@@ -58,6 +59,15 @@ class OscFsRegtest:
     def _cleanupMountDir(self):
 
         os.rmdir(self.m_mnt_dir)
+
+    def _mountStillVisible(self):
+
+        for line in subprocess.check_output("mount").decode().splitlines():
+            parts = line.split()
+            if parts[0] == "OscFs" and parts[2] == self.m_mnt_dir:
+                return True
+
+        return False
 
     def _moveOscConfig(self):
         """Renames all osc configuration files to allow writing new
@@ -119,6 +129,17 @@ class OscFsRegtest:
 
         if rc != 0:
             raise Exception("oscfs exited with non-zero exit state of {}".format(rc))
+
+        # sometimes we seem to encounter a race where the mount directory is
+        # still reported as busy. Maybe the unmount happens asynchronously in
+        # the kernel. Loop a while to make sure the directory really is usable
+        # again.
+        for _ in range(30):
+            if not self._mountStillVisible():
+                break
+
+            print("waiting for", self.m_mnt_dir, "to become non-busy")
+            time.sleep(1.0)
 
     def performMountTests(self):
         """This test checks whether basic mounting works and whether
