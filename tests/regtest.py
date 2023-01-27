@@ -37,6 +37,8 @@ class OscFsRegtest:
         import osc.conf
         # determines the active oscrc configuration file
         self.m_oscrc_config = os.path.expanduser(osc.conf.identify_conf())
+        # determines the active cookie jar file which caches authentication
+        self.m_oscrc_cookiejar = os.path.expanduser(osc.conf._identify_osccookiejar())
 
     def _lookupOscFsBin(self):
 
@@ -216,6 +218,12 @@ user=somebody
 pass=somepass
 """,
                 file=oscrc)
+
+        # make sure any cached authentication is also removed for this test
+        try:
+            os.remove(self.m_oscrc_cookiejar)
+        except Exception:
+            pass
 
         # this is actually more complex, osc chokes on various other
         # conditions like config file not being there, config for apiurl
