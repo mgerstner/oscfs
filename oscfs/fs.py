@@ -68,6 +68,8 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
             help="Disable use of a hack to replace urllib's urlopen function to improve performance."
         )
         self.m_parser.add_argument(
+            "--use-logfile", nargs='?', const=f'/run/user/{os.getuid()}/oscfs.log.{os.getpid()}')
+        self.m_parser.add_argument(
             "mountpoint", type=str,
             help="Path where to mount the file system"
         )
@@ -124,9 +126,23 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
             except KeyError:
                 raise fuse.FuseOSError(errno.ENOENT)
 
+    def _setupLogfile(self):
+
+        logfile = self.m_args.use_logfile
+
+        if not logfile:
+            return
+
+        print("Redirecting output to logfile in", logfile)
+
+        lf = open(logfile, 'a')
+        sys.stdout = lf
+        sys.stderr = lf
+
     def run(self):
 
         self.m_args = self.m_parser.parse_args()
+        self._setupLogfile()
         self.m_obs.configure(self.m_args.apiurl)
         self.m_root = oscfs.root.Root(self.m_obs, self.m_args)
         if self.m_args.cache_time is not None:
