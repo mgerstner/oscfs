@@ -40,8 +40,7 @@ class Obs:
         specified project's metadata."""
 
         xml_lines = osc.core.show_project_meta(self.m_apiurl, project)
-
-        return '\n'.join([line.decode() for line in xml_lines])
+        return ''.join([line.decode() for line in xml_lines])
 
     def getProjectInfo(self, project):
         """Returns an object of type ProjectInfo for the given
@@ -242,7 +241,7 @@ class Obs:
             package
         )
 
-        return '\n'.join([line.decode() for line in xml_lines])
+        return ''.join([line.decode() for line in xml_lines])
 
     def getPackageInfo(self, project, package):
         """Returns an object of type PackageInfo for the given
