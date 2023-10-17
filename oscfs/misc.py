@@ -34,6 +34,27 @@ def getFriendlyException(ex):
     return "Exception in {}:{}: {}".format(fn, ln, str(ex))
 
 
+def getExceptionTrace(ex):
+    import sys
+    import traceback
+    _, _, tb = sys.exc_info()
+    first = True
+    ret = []
+    for frame in traceback.extract_tb(tb):
+        fn, ln, func, ln_text = frame
+
+        ln = str(ln).rjust(4)
+
+        if first:
+            line = f"{fn}:{ln} {func}(): {str(ex)}"
+            ret.append(line)
+            first = False
+        else:
+            ret.append(f"{fn}:{ln} {func}()")
+
+    return '\n'.join(ret)
+
+
 def printException(ex):
     """Prints the currently active exception in a friendly, compact
     way to stderr."""

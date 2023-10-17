@@ -239,9 +239,9 @@ class Node:
             try:
                 self.update()
             except Exception as e:
-                print("Failed to update {}: {}".format(
+                print("Failed to update {}:\n{}".format(
                     self.getName(),
-                    oscfs.misc.getFriendlyException(e),
+                    oscfs.misc.getExceptionTrace(e),
                 ), file=sys.stderr)
                 raise fuse.FuseOSError(errno.EFAULT)
             self.setCacheFresh()
