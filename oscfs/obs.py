@@ -5,6 +5,8 @@ import datetime
 # third party modules
 import osc.core
 
+from oscfs.retry_decorator import transparent_retry
+
 
 class Obs:
     """Wrapper around the osc python module for the purposes of this file
@@ -27,14 +29,14 @@ class Obs:
     def getUser(self):
         return osc.conf.config["user"]
 
+    @transparent_retry()
     def getProjectList(self):
         """Returns a list of the top-level projects of the current OBS
         instance. It's a list of plain strings."""
 
-        ret = osc.core.meta_get_project_list(self.m_apiurl)
+        return osc.core.meta_get_project_list(self.m_apiurl)
 
-        return ret
-
+    @transparent_retry(expect_xml=True)
     def getProjectMeta(self, project):
         """Returns a string consisting of the XML that makes up the
         specified project's metadata."""
@@ -45,19 +47,20 @@ class Obs:
     def getProjectInfo(self, project):
         """Returns an object of type ProjectInfo for the given
         project."""
+
         xml = self.getProjectMeta(project)
         return ProjectInfo(xml)
 
+    @transparent_retry()
     def getPackageList(self, project):
         """Returns a list of all the packages within a top-level
         project. It's a list of plain strings."""
 
-        ret = osc.core.meta_get_packagelist(self.m_apiurl, project)
+        return osc.core.meta_get_packagelist(self.m_apiurl, project)
 
-        return ret
-
+    @transparent_retry(expect_xml=True)
     def _getPackageFileTree(self, project, package, revision=None):
-        xml = osc.core.show_files_meta(
+        return osc.core.show_files_meta(
             self.m_apiurl,
             project,
             package,
@@ -65,19 +68,17 @@ class Obs:
             meta=False
         )
 
-        tree = et.fromstring(xml)
-        return tree
-
     def getPackageFileList(self, project, package, revision=None):
         """Returns a list of the files belonging to a package. The
         list is comprised of tuples of the form (name, size,
         modtime)."""
 
-        tree = self._getPackageFileTree(
+        xml = self._getPackageFileTree(
             project,
             package,
             revision=revision
         )
+        tree = et.fromstring(xml)
         ret = []
 
         # if this is a linked package then we find two nodes
@@ -120,6 +121,7 @@ class Obs:
 
         return ret
 
+    @transparent_retry()
     def getPackageRequestList(self, project, package, states=None):
         """Returns a list of osc.core.Request instances representing
         the existing requests for the given project/package.
@@ -158,6 +160,7 @@ class Obs:
         comps = ['build', project, repo, arch, package, _file]
         return self._download(comps)
 
+    @transparent_retry()
     def _download(self, urlcomps, query=dict()):
 
         import urllib.parse
@@ -176,6 +179,7 @@ class Obs:
 
         return f.read()
 
+    @transparent_retry()
     def _getPackageRevisions(self, project, package, fmt):
         """Returns the list of revisions for the given project/package
         path in the given fmt. @fmt can be any of ('text, 'csv',
@@ -231,6 +235,7 @@ class Obs:
             key=lambda r: r.getRevision()
         )
 
+    @transparent_retry(expect_xml=True)
     def getPackageMeta(self, project, package):
         """Returns a string consisting of the XML that makes up the
         specified package's metadata."""
@@ -249,6 +254,7 @@ class Obs:
         xml = self.getPackageMeta(project, package)
         return PackageInfo(xml)
 
+    @transparent_retry()
     def getBuildlog(self, project, package, repo, arch):
         """Returns the plaintext build log for the given build
         configuration. This can be empty if the build is not
@@ -262,16 +268,17 @@ class Obs:
             "_log?start=0&nostream=1"
         ])
 
-        ret = b""
-
         # NOTE: streamfile supports bufsize="line" to read line wise
         # and supports yield semantics. This breaks with our
-        # urlopenwrapper hack, however so we don't use it.
+        # urlopenwrapper hack, however, so we don't use it.
+        ret = b""
+
         for line in osc.core.streamfile(url):
             ret += line
 
         return ret
 
+    @transparent_retry(expect_xml=True)
     def getBuildResultsMeta(self, project, package, repo=[], arch=[]):
         """Returns XML data describing the build status of the given
         project/package combination. If repo and arch are given then
@@ -298,6 +305,7 @@ class Obs:
 
         return BuildResultList(xml)
 
+    @transparent_retry()
     def getBinaryList(self, project, package, repo, arch):
         """Returns a list of tuples representing the binary
         artifacts of the given build configuration. Each tuple
