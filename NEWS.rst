@@ -1,3 +1,22 @@
+0.9.0
+=====
+
+- use Python3 by default now.
+- various small bugfixes:
+  - fix error if a binary build artifact has zero file size
+  - fix symlink target in package update links (symlink to maintenance
+    incidents).
+- new --no-urlopen-wrapper command line option to disable the HTTP connection
+  reuse hack. This is helpful when working against build.suse.de, where
+  two-factor-authentication is now required and the hack doesn't work with
+  that anymore.
+- new --no-bin-cache command line option to disable caching of large binary files.
+- new --use-logfile command line option to write errors and debugging
+  information to file. This is helpful when oscfs is running as a daemon and
+  stdout/stderr are discarded.
+- implements transparent retry if the OBS server responds with HTTP status 503
+  (service unavailable).
+
 0.8.1
 =====
 
