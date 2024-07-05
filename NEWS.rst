@@ -1,3 +1,9 @@
+0.9.1
+=====
+
+- minor fix for compatibility with OSC version >= 1.6.1, to avoid HTTP bad
+  request errors when opening files.
+
 0.9.0
 =====
 
