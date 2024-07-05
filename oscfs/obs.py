@@ -13,7 +13,24 @@ class Obs:
     system."""
 
     def __init__(self):
-        pass
+        self.makeurl_implements_quote = self.checkMakeurl()
+
+    def getOscVersionTuple(self):
+        ver_nums = osc.core.get_osc_version().split('.')
+        ver_nums = [int(num) for num in ver_nums]
+        if len(ver_nums) == 3:
+            return ver_nums
+
+    def checkMakeurl(self):
+        ver_string = osc.core.get_osc_version()
+        from packaging.version import Version
+
+        # in OSC version 1.6.1 makeurl finally implements URL quoting itself,
+        # so we mustn't add it on top to prevent bad HTTP requests
+        needed_version = Version("1.6.1")
+        our_version = Version(ver_string)
+
+        return our_version >= needed_version
 
     def configure(self, apiurl):
 
@@ -164,10 +181,12 @@ class Obs:
     def _download(self, urlcomps, query=dict()):
 
         import urllib.parse
-        # makeurl below doesn't urlencode the actual url components, only the
-        # query parameters. This breaks certain file names that e.g. contain
-        # '#'. So let's explicitly urlencode them.
-        urlcomps = [urllib.parse.quote_plus(comp) for comp in urlcomps]
+        # makeurl below, in versions older than OSC 1.6.1, doesn't urlencode
+        # the actual url components, only the query parameters. This breaks
+        # certain file names that e.g. contain '#'. So let's explicitly
+        # urlencode them.
+        if not self.makeurl_implements_quote:
+            urlcomps = [urllib.parse.quote_plus(comp) for comp in urlcomps]
 
         url = osc.core.makeurl(
             self.m_apiurl,
