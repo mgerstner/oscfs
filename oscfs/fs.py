@@ -2,6 +2,9 @@ import argparse
 import errno
 import os
 import sys
+import threading
+import time
+import contextlib
 
 # third party modules
 import fuse
@@ -139,8 +142,26 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
         sys.stdout = lf
         sys.stderr = lf
 
-    def run(self):
+    def _keepalive(self):
+        while self._keepalive:
+            time.sleep(5 * 60)
+            # send a request to keep the connection alive
+            self.m_obs.about()
 
+    @contextlib.contextmanager
+    def optional_keepalive(self):
+        if "--no-urlopen-wrapper" in sys.argv:
+            yield
+            return
+
+        self._timer = threading.Thread(target=self._keepalive)
+        self._keepalive = True
+        self._timer.start()
+        yield
+        self._keepalive = False
+        self._timer.join()
+
+    def run(self):
         self.m_args = self.m_parser.parse_args()
         self._setupLogfile()
         self.m_obs.configure(self.m_args.apiurl)
@@ -152,17 +173,18 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 
         self._checkAuth()
 
-        fuse.FUSE(
-            self,
-            self.m_args.mountpoint,
-            foreground=self.m_args.f,
-            nothreads=True,
-            # direct_io is necessary in our use case to avoid
-            # caching in the kernel and support dynamically
-            # determined file contents
-            direct_io=True,
-            nonempty=True
-        )
+        with self.optional_keepalive():
+            fuse.FUSE(
+                self,
+                self.m_args.mountpoint,
+                foreground=self.m_args.f,
+                nothreads=True,
+                # direct_io is necessary in our use case to avoid
+                # caching in the kernel and support dynamically
+                # determined file contents
+                direct_io=True,
+                nonempty=True
+            )
 
     def init(self, path):
         """This is called upon file system initialization."""
