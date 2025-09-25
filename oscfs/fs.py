@@ -4,7 +4,6 @@ import os
 import sys
 import threading
 import time
-import contextlib
 
 # third party modules
 import fuse
@@ -35,6 +34,7 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
         # unallocated file handles
         self.m_free_handles = list(range(1024))
         self._setupParser()
+        self._keepalive_timer = threading.Thread(target=self._keepalive_thread)
 
     def _setupParser(self):
 
@@ -85,6 +85,14 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
             help=f"""Specifies the time in seconds the contents
                 of the file system will be cached. Default: {CACHE_SECS}
                 seconds. Set to zero to disable caching."""
+        )
+
+        self.m_parser.add_argument(
+            "--keepalive-interval", type=int,
+            default=0,
+            help=f"""Specifies the time in seconds a keepalive request will be
+                issued towards the OBS backend. Default: 0
+                seconds. Set to zero to disable keepalive."""
         )
 
     def _checkAuth(self):
@@ -142,24 +150,11 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
         sys.stdout = lf
         sys.stderr = lf
 
-    def _keepalive(self):
+    def _keepalive_thread(self):
         while self._keepalive:
-            time.sleep(5 * 60)
+            time.sleep(self.m_args.keepalive_interval)
             # send a request to keep the connection alive
             self.m_obs.about()
-
-    @contextlib.contextmanager
-    def optional_keepalive(self):
-        if "--no-urlopen-wrapper" in sys.argv:
-            yield
-            return
-
-        self._timer = threading.Thread(target=self._keepalive)
-        self._keepalive = True
-        self._timer.start()
-        yield
-        self._keepalive = False
-        self._timer.join()
 
     def run(self):
         self.m_args = self.m_parser.parse_args()
@@ -173,18 +168,20 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
 
         self._checkAuth()
 
-        with self.optional_keepalive():
-            fuse.FUSE(
-                self,
-                self.m_args.mountpoint,
-                foreground=self.m_args.f,
-                nothreads=True,
-                # direct_io is necessary in our use case to avoid
-                # caching in the kernel and support dynamically
-                # determined file contents
-                direct_io=True,
-                nonempty=True
-            )
+        fuse.FUSE(
+            self,
+            self.m_args.mountpoint,
+            foreground=self.m_args.f,
+            nothreads=True,
+            # direct_io is necessary in our use case to avoid
+            # caching in the kernel and support dynamically
+            # determined file contents
+            direct_io=True,
+            nonempty=True
+        )
+
+        self._keepalive = False
+        self._keepalive_timer.join()
 
     def init(self, path):
         """This is called upon file system initialization."""
@@ -194,6 +191,9 @@ class OscFs(fuse.LoggingMixIn, fuse.Operations):
             # actually mounted
             print("file system initialized")
             sys.stdout.flush()
+
+        self._keepalive = self.m_args.keepalive_interval > 0
+        self._keepalive_timer.start()
 
     # global file system methods
 
