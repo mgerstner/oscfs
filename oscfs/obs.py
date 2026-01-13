@@ -73,7 +73,10 @@ class Obs:
         """Returns a list of all the packages within a top-level
         project. It's a list of plain strings."""
 
-        return osc.core.meta_get_packagelist(self.m_apiurl, project)
+        # the deleted=0 parameter changes behaviour in some buggy OSC
+        # versions, it makes sure we get a proper result even in e.g.
+        # multibuild packages, and some projects, the details are sketchy.
+        return osc.core.meta_get_packagelist(self.m_apiurl, project, deleted=0)
 
     @transparent_retry(expect_xml=True)
     def _getPackageFileTree(self, project, package, revision=None):
