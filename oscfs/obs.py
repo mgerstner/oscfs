@@ -202,6 +202,17 @@ class Obs:
         return f.read()
 
     @transparent_retry()
+    def about(self):
+        url = osc.core.makeurl(
+            self.m_apiurl,
+            ['about']
+        )
+
+        f = osc.core.http_GET(url)
+
+        return f.read()
+
+    @transparent_retry()
     def _getPackageRevisions(self, project, package, fmt):
         """Returns the list of revisions for the given project/package
         path in the given fmt. @fmt can be any of ('text, 'csv',
